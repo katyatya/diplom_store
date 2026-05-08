@@ -12,15 +12,32 @@ enum UserRole {
   ADMIN
 }
 
+enum DeliveryType {
+  PICKUP
+  CDEK
+}
+
+enum OrderStatus {
+  NEW
+  PAID
+  SHIPPED
+  COMPLETED
+  CANCELLED
+}
+
 model User {
   id           String    @id @default(cuid())
   email        String    @unique
   passwordHash String
+  refreshTokenHash String?
+  refreshTokenExpiresAt DateTime?
   role         UserRole  @default(USER)
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   cart         Cart?
   outfits      Outfit[]
+  orders       Order[]
+  wishlist     WishlistItem[]
 }
 
 model Product {
@@ -29,10 +46,14 @@ model Product {
   description String?
   price       Decimal     @db.Decimal(10, 2)
   imageUrl    String
+  category    String      @default("Одежда")
+  isNew       Boolean     @default(false)
   isActive    Boolean     @default(true)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   cartItems   CartItem[]
+  orderItems  OrderItem[]
+  wishlistBy  WishlistItem[]
 }
 
 model Cart {
@@ -67,4 +88,55 @@ model Outfit {
   items       Json
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model Order {
+  id            String       @id @default(cuid())
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customerName   String
+  phone          String
+  email          String
+  address        String?
+  deliveryType   DeliveryType
+  deliveryPrice  Decimal      @db.Decimal(10, 2)
+  paymentMethod  String
+  status         OrderStatus   @default(NEW)
+  totalAmount    Decimal      @db.Decimal(10, 2)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  items          OrderItem[]
+}
+
+model OrderItem {
+  id           String   @id @default(cuid())
+  orderId       String
+  order         Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId     String
+  product       Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+  productName   String
+  productPrice  Decimal  @db.Decimal(10, 2)
+  quantity      Int
+}
+
+model WishlistItem {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, productId])
+}
+
+model Banner {
+  id        String   @id @default(cuid())
+  title     String
+  subtitle  String?
+  imageUrl  String
+  section   String   @default("main")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

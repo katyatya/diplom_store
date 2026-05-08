@@ -12,6 +12,9 @@ export interface OutfitItem {
   x: number;
   y: number;
   zIndex: number;
+  width?: number;
+  height?: number;
+  rotation?: number;
 }
 
 export interface OutfitDraft {

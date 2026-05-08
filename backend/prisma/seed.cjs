@@ -4,6 +4,10 @@ const bcrypt = require("bcrypt");
 const prisma = new PrismaClient();
 
 async function main() {
+  await prisma.banner.deleteMany();
+  await prisma.wishlistItem.deleteMany();
+  await prisma.orderItem.deleteMany();
+  await prisma.order.deleteMany();
   await prisma.cartItem.deleteMany();
   await prisma.cart.deleteMany();
   await prisma.outfit.deleteMany();
@@ -35,30 +39,40 @@ async function main() {
       description: "Классический тренч oversize для межсезонья.",
       price: 12990,
       imageUrl: "https://images.unsplash.com/photo-1529139574466-a303027c1d8b",
+      category: "Верхняя одежда",
+      isNew: true,
     },
     {
       name: "Белая базовая футболка",
       description: "Плотный хлопок, прямой крой.",
       price: 2590,
       imageUrl: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab",
+      category: "Футболки",
+      isNew: true,
     },
     {
       name: "Черные прямые джинсы",
       description: "Высокая посадка, деним средней плотности.",
       price: 5490,
       imageUrl: "https://images.unsplash.com/photo-1541099649105-f69ad21f3246",
+      category: "Джинсы",
+      isNew: false,
     },
     {
       name: "Кроссовки кожаные",
       description: "Минималистичный силуэт на каждый день.",
       price: 8990,
       imageUrl: "https://images.unsplash.com/photo-1542291026-7eec264c27ff",
+      category: "Обувь",
+      isNew: true,
     },
     {
       name: "Свитер серый",
       description: "Мягкая пряжа с добавлением шерсти.",
       price: 6990,
       imageUrl: "https://images.unsplash.com/photo-1434389677669-e08b4cac3105",
+      category: "Свитеры",
+      isNew: false,
     },
   ];
 
@@ -70,10 +84,29 @@ async function main() {
         description: product.description,
         price: new Prisma.Decimal(product.price),
         imageUrl: product.imageUrl,
+        category: product.category,
+        isNew: product.isNew,
       },
     });
     productIds.push(savedProduct.id);
   }
+
+  await prisma.banner.createMany({
+    data: [
+      {
+        title: "Весенняя коллекция 2026",
+        subtitle: "Новые образы для города и офиса",
+        imageUrl: "https://images.unsplash.com/photo-1441986300917-64674bd600d8",
+        section: "home",
+      },
+      {
+        title: "Новинки недели",
+        subtitle: "Соберите актуальный total look",
+        imageUrl: "https://images.unsplash.com/photo-1483985988355-763728e1935b",
+        section: "new",
+      },
+    ],
+  });
 
   await prisma.cart.create({
     data: {
@@ -107,6 +140,13 @@ async function main() {
       description: "Образ для офиса и вечерней встречи.",
       isStylist: true,
       items: stylistLookItems,
+    },
+  });
+
+  await prisma.wishlistItem.create({
+    data: {
+      userId: user.id,
+      productId: productIds[3],
     },
   });
 

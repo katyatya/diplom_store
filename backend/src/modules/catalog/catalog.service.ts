@@ -7,9 +7,21 @@ import { CreateProductDto } from "./dto/create-product.dto";
 export class CatalogService {
   constructor(private readonly prisma: PrismaService) {}
 
-  listProducts() {
+  listProducts(filters?: { category?: string; isNew?: string }) {
+    const category = filters?.category?.trim();
+    const isNew =
+      filters?.isNew === "true"
+        ? true
+        : filters?.isNew === "false"
+          ? false
+          : undefined;
+
     return this.prisma.product.findMany({
-      where: { isActive: true },
+      where: {
+        isActive: true,
+        ...(category ? { category } : {}),
+        ...(isNew !== undefined ? { isNew } : {}),
+      },
       orderBy: { createdAt: "desc" },
     });
   }
@@ -29,7 +41,36 @@ export class CatalogService {
         description: dto.description,
         price: new Prisma.Decimal(dto.price),
         imageUrl: dto.imageUrl,
+        category: dto.category ?? "Одежда",
+        isNew: dto.isNew ?? false,
       },
+    });
+  }
+
+  async listCategories() {
+    const rows = await this.prisma.product.findMany({
+      where: { isActive: true },
+      select: { category: true },
+      distinct: ["category"],
+      orderBy: { category: "asc" },
+    });
+    return rows.map((row) => row.category);
+  }
+
+  listNewProducts() {
+    return this.prisma.product.findMany({
+      where: { isActive: true, isNew: true },
+      orderBy: { createdAt: "desc" },
+    });
+  }
+
+  listBanners(section?: string) {
+    return this.prisma.banner.findMany({
+      where: {
+        isActive: true,
+        ...(section ? { section } : {}),
+      },
+      orderBy: { createdAt: "desc" },
     });
   }
 }

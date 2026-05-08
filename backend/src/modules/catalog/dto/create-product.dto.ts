@@ -1,4 +1,11 @@
-import { IsNumber, IsOptional, IsString, IsUrl, Min } from "class-validator";
+import {
+  IsBoolean,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUrl,
+  Min,
+} from "class-validator";
 
 export class CreateProductDto {
   @IsString()
@@ -15,4 +22,12 @@ export class CreateProductDto {
   @IsString()
   @IsUrl()
   imageUrl!: string;
+
+  @IsOptional()
+  @IsString()
+  category?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isNew?: boolean;
 }
