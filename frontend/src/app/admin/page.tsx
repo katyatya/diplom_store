@@ -9,6 +9,9 @@ import {
   adminFetchOrders,
   adminFetchProducts,
 } from "@/lib/api";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 
 export default function AdminPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -66,66 +69,91 @@ export default function AdminPage() {
   }
 
   return (
-    <section style={{ display: "grid", gap: 16 }}>
-      <h1>Админка</h1>
-      <p>Управление товарами, заказами, баннерами и образами стилистов через backend `/admin/*`.</p>
-      {status ? <p>{status}</p> : null}
+    <section className="grid gap-4">
+      <h1 className="text-3xl font-semibold tracking-tight">Админка</h1>
+      <p className="text-sm text-muted-foreground">
+        Управление товарами, заказами, баннерами и образами стилистов через backend
+        `/admin/*`.
+      </p>
+      {status ? <p className="text-sm text-muted-foreground">{status}</p> : null}
 
-      <section style={{ border: "1px solid #ddd", borderRadius: 10, padding: 12 }}>
-        <h2>Добавить товар</h2>
-        <form onSubmit={onCreateProduct} style={{ display: "grid", gap: 8, maxWidth: 460 }}>
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Название" required />
-          <input
+      <Card>
+        <CardHeader>
+          <CardTitle>Добавить товар</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={onCreateProduct} className="grid max-w-md gap-2">
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Название"
+              required
+            />
+            <Input
             value={price}
             type="number"
             min={0}
             onChange={(e) => setPrice(e.target.value)}
             placeholder="Цена"
             required
-          />
-          <input
-            value={imageUrl}
-            onChange={(e) => setImageUrl(e.target.value)}
-            placeholder="URL картинки"
-            required
-          />
-          <input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="Категория" required />
-          <button type="submit">Добавить</button>
-        </form>
-      </section>
+            />
+            <Input
+              value={imageUrl}
+              onChange={(e) => setImageUrl(e.target.value)}
+              placeholder="URL картинки"
+              required
+            />
+            <Input
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              placeholder="Категория"
+              required
+            />
+            <Button type="submit">Добавить</Button>
+          </form>
+        </CardContent>
+      </Card>
 
-      <section style={{ border: "1px solid #ddd", borderRadius: 10, padding: 12 }}>
-        <h2>Товары</h2>
-        <div style={{ display: "grid", gap: 8 }}>
+      <Card>
+        <CardHeader>
+          <CardTitle>Товары</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-2">
           {products.map((product) => (
-            <article key={product.id} style={{ border: "1px solid #eee", borderRadius: 8, padding: 10 }}>
+            <article key={product.id} className="rounded-lg border p-3">
               <strong>{product.name}</strong> - {Number(product.price).toLocaleString("ru-RU")} руб
-              <p style={{ margin: "6px 0" }}>
+              <p className="my-1 text-sm text-muted-foreground">
                 {product.category} / {product.isActive ? "Активен" : "Скрыт"}
               </p>
-              <button onClick={() => void onDeleteProduct(product.id)}>Удалить</button>
+              <Button size="sm" variant="outline" onClick={() => void onDeleteProduct(product.id)}>
+                Удалить
+              </Button>
             </article>
           ))}
-        </div>
-      </section>
+        </CardContent>
+      </Card>
 
-      <section style={{ border: "1px solid #ddd", borderRadius: 10, padding: 12 }}>
-        <h2>Заказы (уведомления продавцу)</h2>
-        <p>Новые заказы отображаются здесь сразу после оформления.</p>
-        <div style={{ display: "grid", gap: 8 }}>
+      <Card>
+        <CardHeader>
+          <CardTitle>Заказы (уведомления продавцу)</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Новые заказы отображаются здесь сразу после оформления.
+          </p>
+        </CardHeader>
+        <CardContent className="grid gap-2">
           {orders.map((order) => (
-            <article key={order.id} style={{ border: "1px solid #eee", borderRadius: 8, padding: 10 }}>
+            <article key={order.id} className="rounded-lg border p-3">
               <strong>Заказ {order.id.slice(0, 8)}</strong> - {order.customerName}
-              <p style={{ margin: "4px 0" }}>
+              <p className="my-1 text-sm text-muted-foreground">
                 {order.email} / {order.phone}
               </p>
-              <p style={{ margin: "4px 0" }}>
+              <p className="my-1 text-sm text-muted-foreground">
                 {order.deliveryType} / {Number(order.totalAmount).toLocaleString("ru-RU")} руб
               </p>
             </article>
           ))}
-        </div>
-      </section>
+        </CardContent>
+      </Card>
     </section>
   );
 }

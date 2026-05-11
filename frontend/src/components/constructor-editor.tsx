@@ -12,6 +12,9 @@ import {
   updateOutfit,
 } from "@/lib/api";
 import { OutfitPreview } from "@/components/outfit-preview";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 
 const CANVAS_WIDTH = 430;
 const CANVAS_HEIGHT = 620;
@@ -314,176 +317,128 @@ export function ConstructorEditor() {
   }
 
   return (
-    <section style={{ display: "grid", gap: 16 }}>
-      <h1>Конструктор образов</h1>
-      <p>
+    <section className="grid gap-4">
+      <h1 className="text-3xl font-semibold tracking-tight">Конструктор образов</h1>
+      <p className="text-sm text-muted-foreground">
         Добавляйте товары из каталога на полотно, меняйте их размер и позицию, затем
         сохраняйте образ в "Мои образы".
       </p>
 
-      <section style={{ border: "1px solid #ddd", borderRadius: 10, padding: 12 }}>
-        <h2>{editingOutfitId ? "Редактирование образа" : "Новый образ"}</h2>
-        <div style={{ display: "grid", gap: 8, maxWidth: 420 }}>
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Название образа" />
-          <input
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle>{editingOutfitId ? "Редактирование образа" : "Новый образ"}</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-3">
+          <div className="grid max-w-[420px] gap-2">
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Название образа"
+            />
+            <Input
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Описание (необязательно)"
-          />
-        </div>
-
-        <div
-          style={{
-            marginTop: 12,
-            display: "grid",
-            gap: 16,
-            gridTemplateColumns: "320px minmax(460px, 1fr) 260px",
-            alignItems: "start",
-          }}
-        >
-          <div style={{ display: "grid", gap: 8, maxHeight: 620, overflow: "auto", paddingRight: 4 }}>
-            <strong>Товары из каталога</strong>
-            {products.map((product) => (
-              <article
-                key={product.id}
-                style={{
-                  border: "1px solid #eee",
-                  borderRadius: 8,
-                  padding: 8,
-                  display: "grid",
-                  gap: 6,
-                }}
-              >
-                <span>{product.name}</span>
-                <span>{Number(product.price).toLocaleString("ru-RU")} руб</span>
-                <button onClick={() => addProductToCanvas(product)}>Добавить на полотно</button>
-              </article>
-            ))}
+            />
           </div>
 
-          <div
-            id="outfit-constructor-canvas"
-            style={{
-              width: CANVAS_WIDTH,
-              height: CANVAS_HEIGHT,
-              position: "relative",
-              border: "1px solid #d7d7d7",
-              borderRadius: 10,
-              backgroundColor: "#fff",
-              overflow: "hidden",
-            }}
-            onMouseDown={(event) => {
-              if (event.target === event.currentTarget) {
-                setSelectedNodeId(null);
-              }
-            }}
-          >
-            {canvasItems
-              .slice()
-              .sort((a, b) => a.zIndex - b.zIndex)
-              .map((item) => {
-                const product = productsById[item.productId];
-                if (!product) return null;
-                return (
-                  <div
-                    key={item.nodeId}
-                    style={{
-                      position: "absolute",
-                      left: item.x,
-                      top: item.y,
-                      width: item.width,
-                      height: item.height,
-                      transform: `rotate(${item.rotation}deg)`,
-                    }}
-                  >
-                    <img
-                      src={product.imageUrl}
-                      alt={product.name}
-                      draggable={false}
-                      onMouseDown={(event) => onCanvasItemMouseDown(event, item)}
-                      onClick={() => setSelectedNodeId(item.nodeId)}
+          <div className="mt-3 grid items-start gap-4 xl:grid-cols-[320px_minmax(460px,1fr)_260px]">
+            <div className="grid max-h-[620px] gap-2 overflow-auto pr-1">
+              <strong>Товары из каталога</strong>
+            {products.map((product) => (
+                <article key={product.id} className="grid gap-2 rounded-lg border p-2">
+                  <span>{product.name}</span>
+                  <span className="text-sm text-muted-foreground">
+                    {Number(product.price).toLocaleString("ru-RU")} руб
+                  </span>
+                  <Button size="sm" onClick={() => addProductToCanvas(product)}>
+                    Добавить на полотно
+                  </Button>
+                </article>
+            ))}
+            </div>
+
+            <div
+              id="outfit-constructor-canvas"
+              className="relative overflow-hidden rounded-lg border bg-card"
+              style={{ width: CANVAS_WIDTH, height: CANVAS_HEIGHT }}
+              onMouseDown={(event) => {
+                if (event.target === event.currentTarget) {
+                  setSelectedNodeId(null);
+                }
+              }}
+            >
+              {canvasItems
+                .slice()
+                .sort((a, b) => a.zIndex - b.zIndex)
+                .map((item) => {
+                  const product = productsById[item.productId];
+                  if (!product) return null;
+                  return (
+                    <div
+                      key={item.nodeId}
                       style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                        cursor: "grab",
-                        border:
-                          selectedNodeId === item.nodeId ? "2px solid #111" : "1px solid #ddd",
-                        borderRadius: 8,
-                        userSelect: "none",
-                        display: "block",
+                        position: "absolute",
+                        left: item.x,
+                        top: item.y,
+                        width: item.width,
+                        height: item.height,
+                        transform: `rotate(${item.rotation}deg)`,
                       }}
-                    />
-                    {selectedNodeId === item.nodeId ? (
-                      <button
-                        type="button"
-                        aria-label="Изменить размер"
-                        onMouseDown={(event) => onResizeHandleMouseDown(event, item)}
+                    >
+                      <img
+                        src={product.imageUrl}
+                        alt={product.name}
+                        draggable={false}
+                        onMouseDown={(event) => onCanvasItemMouseDown(event, item)}
+                        onClick={() => setSelectedNodeId(item.nodeId)}
+                        className="block h-full w-full select-none rounded-md object-cover"
                         style={{
-                          position: "absolute",
-                          right: -8,
-                          bottom: -8,
-                          width: 18,
-                          height: 18,
-                          border: "1px solid #111",
-                          borderRadius: 4,
-                          backgroundColor: "#fff",
-                          cursor: "nwse-resize",
+                          cursor: "grab",
+                          border:
+                            selectedNodeId === item.nodeId
+                              ? "2px solid hsl(var(--foreground))"
+                              : "1px solid hsl(var(--border))",
                         }}
                       />
-                    ) : null}
-                    {selectedNodeId === item.nodeId ? (
-                      <button
-                        type="button"
-                        aria-label="Удалить с полотна"
-                        onMouseDown={(event) => {
-                          event.preventDefault();
-                          event.stopPropagation();
-                        }}
-                        onClick={(event) => {
-                          event.preventDefault();
-                          event.stopPropagation();
-                          removeItemFromCanvas(item.nodeId);
-                        }}
-                        style={{
-                          position: "absolute",
-                          right: -8,
-                          top: -8,
-                          width: 20,
-                          height: 20,
-                          border: "1px solid #b00",
-                          borderRadius: 999,
-                          backgroundColor: "#fff",
-                          color: "#b00",
-                          cursor: "pointer",
-                          fontWeight: 700,
-                          lineHeight: "18px",
-                          padding: 0,
-                        }}
-                      >
-                        ×
-                      </button>
-                    ) : null}
-                  </div>
-                );
-              })}
-          </div>
+                      {selectedNodeId === item.nodeId ? (
+                        <button
+                          type="button"
+                          aria-label="Изменить размер"
+                          onMouseDown={(event) => onResizeHandleMouseDown(event, item)}
+                          className="absolute -bottom-2 -right-2 h-[18px] w-[18px] cursor-nwse-resize rounded-sm border border-foreground bg-card"
+                        />
+                      ) : null}
+                      {selectedNodeId === item.nodeId ? (
+                        <button
+                          type="button"
+                          aria-label="Удалить с полотна"
+                          onMouseDown={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                          }}
+                          onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            removeItemFromCanvas(item.nodeId);
+                          }}
+                          className="absolute -right-2 -top-2 h-5 w-5 rounded-full border border-destructive text-destructive"
+                        >
+                          ×
+                        </button>
+                      ) : null}
+                    </div>
+                  );
+                })}
+            </div>
 
-          <aside
-            style={{
-              border: "1px solid #eee",
-              borderRadius: 8,
-              padding: 10,
-              display: "grid",
-              gap: 8,
-            }}
-          >
-            <strong>Настройки</strong>
+            <aside className="grid gap-2 rounded-lg border p-3">
+              <strong>Настройки</strong>
             {selectedItem ? (
               <>
-                <label>
+                <label className="grid gap-1 text-sm">
                   X
-                  <input
+                  <Input
                     type="number"
                     value={Math.round(selectedItem.x)}
                     onChange={(event) =>
@@ -491,9 +446,9 @@ export function ConstructorEditor() {
                     }
                   />
                 </label>
-                <label>
+                <label className="grid gap-1 text-sm">
                   Y
-                  <input
+                  <Input
                     type="number"
                     value={Math.round(selectedItem.y)}
                     onChange={(event) =>
@@ -501,9 +456,9 @@ export function ConstructorEditor() {
                     }
                   />
                 </label>
-                <label>
+                <label className="grid gap-1 text-sm">
                   Ширина
-                  <input
+                  <Input
                     type="number"
                     min={60}
                     value={Math.round(selectedItem.width)}
@@ -514,9 +469,9 @@ export function ConstructorEditor() {
                     }
                   />
                 </label>
-                <label>
+                <label className="grid gap-1 text-sm">
                   Высота
-                  <input
+                  <Input
                     type="number"
                     min={60}
                     value={Math.round(selectedItem.height)}
@@ -527,9 +482,10 @@ export function ConstructorEditor() {
                     }
                   />
                 </label>
-                <label>
+                <label className="grid gap-1 text-sm">
                   Поворот
                   <input
+                    className="accent-primary"
                     type="range"
                     min={-180}
                     max={180}
@@ -541,59 +497,74 @@ export function ConstructorEditor() {
                     }
                   />
                 </label>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <button onClick={bringSelectedForward}>Слой выше</button>
-                  <button onClick={sendSelectedBackward}>Слой ниже</button>
-                  <button onClick={removeSelectedItem}>Удалить с полотна</button>
+                <div className="flex flex-wrap gap-2">
+                  <Button size="sm" variant="secondary" onClick={bringSelectedForward}>
+                    Слой выше
+                  </Button>
+                  <Button size="sm" variant="secondary" onClick={sendSelectedBackward}>
+                    Слой ниже
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={removeSelectedItem}>
+                    Удалить с полотна
+                  </Button>
                 </div>
               </>
             ) : (
-              <p>Выберите товар на полотне для изменения размера и размещения.</p>
+              <p className="text-sm text-muted-foreground">
+                Выберите товар на полотне для изменения размера и размещения.
+              </p>
             )}
-          </aside>
-        </div>
+            </aside>
+          </div>
 
-        <p>Товаров на полотне: {canvasItems.length}</p>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <button onClick={() => void onSaveOutfit()}>Сохранить в "Мои образы"</button>
-          <button onClick={resetDraft}>Очистить полотно</button>
-        </div>
-      </section>
+          <p className="text-sm text-muted-foreground">Товаров на полотне: {canvasItems.length}</p>
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={() => void onSaveOutfit()}>Сохранить в "Мои образы"</Button>
+            <Button variant="outline" onClick={resetDraft}>
+              Очистить полотно
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
-      <section style={{ border: "1px solid #ddd", borderRadius: 10, padding: 12 }}>
-        <h2>Мои образы</h2>
-        {myOutfits.length === 0 ? <p>Пока нет сохраненных образов.</p> : null}
-        <div style={{ display: "grid", gap: 10 }}>
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle>Мои образы</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {myOutfits.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Пока нет сохраненных образов.</p>
+          ) : null}
+          <div className="grid gap-3">
           {myOutfits.map((outfit) => (
-            <article
-              key={outfit.id}
-              style={{
-                border: "1px solid #eee",
-                borderRadius: 8,
-                padding: 10,
-                display: "grid",
-                gridTemplateColumns: "180px 1fr",
-                gap: 12,
-                alignItems: "start",
-              }}
-            >
+              <article
+                key={outfit.id}
+                className="grid gap-3 rounded-lg border p-3 md:grid-cols-[180px_1fr] md:items-start"
+              >
               <OutfitPreview items={outfit.items} productsById={productsById} width={160} height={220} />
-              <div>
+              <div className="grid gap-1">
                 <strong>{outfit.name}</strong>
-                <p>{outfit.description || "Без описания"}</p>
-                <p>Позиции: {outfit.items.length}</p>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <button onClick={() => loadOutfitToCanvas(outfit)}>Открыть в конструкторе</button>
-                  <button onClick={() => void onDeleteOutfit(outfit.id)}>Удалить</button>
-                  <button onClick={() => void onAddOutfitToCart(outfit.id)}>Добавить в корзину</button>
+                <p className="text-sm text-muted-foreground">{outfit.description || "Без описания"}</p>
+                <p className="text-sm text-muted-foreground">Позиции: {outfit.items.length}</p>
+                <div className="flex flex-wrap gap-2">
+                  <Button size="sm" variant="secondary" onClick={() => loadOutfitToCanvas(outfit)}>
+                    Открыть в конструкторе
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => void onDeleteOutfit(outfit.id)}>
+                    Удалить
+                  </Button>
+                  <Button size="sm" onClick={() => void onAddOutfitToCart(outfit.id)}>
+                    Добавить в корзину
+                  </Button>
                 </div>
               </div>
-            </article>
+              </article>
           ))}
-        </div>
-      </section>
+          </div>
+        </CardContent>
+      </Card>
 
-      {status ? <p>{status}</p> : null}
+      {status ? <p className="text-sm text-muted-foreground">{status}</p> : null}
     </section>
   );
 }

@@ -23,17 +23,8 @@ export function OutfitPreview({
   if (sortedItems.length === 0) {
     return (
       <div
-        style={{
-          width,
-          height,
-          border: "1px dashed #d0d0d0",
-          borderRadius: 10,
-          display: "grid",
-          placeItems: "center",
-          color: "#999",
-          fontSize: 12,
-          backgroundColor: "#fff",
-        }}
+        className="grid place-items-center rounded-lg border border-dashed bg-card text-xs text-muted-foreground"
+        style={{ width, height }}
       >
         Без позиций
       </div>
@@ -57,15 +48,8 @@ export function OutfitPreview({
 
   return (
     <div
-      style={{
-        width,
-        height,
-        position: "relative",
-        border: "1px solid #e5e5e5",
-        borderRadius: 10,
-        backgroundColor: "#fff",
-        overflow: "hidden",
-      }}
+      className="relative overflow-hidden rounded-lg border bg-card"
+      style={{ width, height }}
     >
       {sortedItems.map((item, index) => {
         const product = productsById[item.productId];
@@ -91,8 +75,8 @@ export function OutfitPreview({
               transformOrigin: "center center",
               objectFit: "cover",
               borderRadius: 6,
-              border: "1px solid #efefef",
-              backgroundColor: "#f8f8f8",
+              border: "1px solid hsl(var(--border))",
+              backgroundColor: "hsl(var(--muted))",
             }}
           />
         );

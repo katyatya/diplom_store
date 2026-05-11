@@ -9,7 +9,7 @@ const ConstructorEditor = dynamic(
     ),
   {
     ssr: false,
-    loading: () => <p>Загрузка конструктора...</p>,
+    loading: () => <p className="text-sm text-muted-foreground">Загрузка конструктора...</p>,
   },
 );
 
