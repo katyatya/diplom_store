@@ -6,22 +6,37 @@ import { Card, CardContent } from "@/components/ui/card";
 
 export default function ProfilePage() {
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [isUserLoading, setIsUserLoading] = useState(true);
   const [orders, setOrders] = useState<Order[]>([]);
   const [status, setStatus] = useState("");
 
   useEffect(() => {
-    void fetchMe()
-      .then(setUser)
-      .catch(() => setUser(null));
-    void fetchMyOrders()
-      .then(setOrders)
-      .catch(() => setStatus("Войдите в аккаунт, чтобы посмотреть историю заказов."));
+    void (async () => {
+      try {
+        const currentUser = await fetchMe();
+        setUser(currentUser);
+
+        const myOrders = await fetchMyOrders();
+        setOrders(myOrders);
+      } catch {
+        setUser(null);
+        setOrders([]);
+        setStatus("Войдите в аккаунт, чтобы посмотреть историю заказов.");
+      } finally {
+        setIsUserLoading(false);
+      }
+    })();
   }, []);
 
   return (
     <section className="grid gap-4">
       <h1 className="text-3xl font-semibold tracking-tight">Личный профиль</h1>
-      {user ? (
+      {isUserLoading ? (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span className="h-4 w-4 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-muted-foreground" />
+          Загрузка данных профиля...
+        </div>
+      ) : user ? (
         <p className="text-sm text-muted-foreground">
           {user.name || "Пользователь"} ({user.email})
         </p>

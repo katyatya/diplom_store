@@ -4,10 +4,12 @@ import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useEffect } from "react";
 import { createOrder, fetchMe } from "@/lib/api";
+import { requestAuthRequired } from "@/lib/auth-required";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useToast } from "@/components/ui/toast";
 
 export default function CheckoutPage() {
   const [authorized, setAuthorized] = useState(false);
@@ -18,15 +20,24 @@ export default function CheckoutPage() {
   const [deliveryType, setDeliveryType] = useState<"PICKUP" | "CDEK">("PICKUP");
   const [paymentMethod, setPaymentMethod] = useState("Онлайн");
   const [status, setStatus] = useState("");
+  const { showToast } = useToast();
 
   useEffect(() => {
     void fetchMe()
       .then(() => setAuthorized(true))
-      .catch(() => setAuthorized(false));
-  }, []);
+      .catch(() => {
+        setAuthorized(false);
+        requestAuthRequired(showToast, "checkout");
+      });
+  }, [showToast]);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!authorized) {
+      requestAuthRequired(showToast, "checkout");
+      return;
+    }
+
     try {
       const order = await createOrder({
         customerName,
@@ -109,7 +120,7 @@ export default function CheckoutPage() {
                 <option value="При получении">При получении</option>
               </select>
             </Label>
-            <Button type="submit" disabled={!authorized}>
+            <Button type="submit">
               Оформить заказ
             </Button>
           </form>

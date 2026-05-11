@@ -11,7 +11,7 @@ type ToastRecord = {
   variant: ToastVariant;
 };
 
-type ToastContextValue = {
+export type ToastContextValue = {
   showToast: (text: string, variant?: ToastVariant) => void;
 };
 

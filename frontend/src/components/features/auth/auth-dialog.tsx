@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { UserRound } from "lucide-react";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import {
   type AuthUser,
   login,
@@ -22,6 +22,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/toast";
+import { AUTH_DIALOG_OPEN_EVENT } from "@/lib/auth-required";
 
 type AuthMode = "login" | "register";
 
@@ -38,6 +39,16 @@ export function AuthDialog({ user, onUserChange }: AuthDialogProps) {
   const [password, setPassword] = useState("User123!");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { showToast } = useToast();
+
+  useEffect(() => {
+    function onOpenAuthDialog() {
+      setMode("login");
+      setIsOpen(true);
+    }
+
+    window.addEventListener(AUTH_DIALOG_OPEN_EVENT, onOpenAuthDialog);
+    return () => window.removeEventListener(AUTH_DIALOG_OPEN_EVENT, onOpenAuthDialog);
+  }, []);
 
   function validateName(rawName: string): string | null {
     const trimmed = rawName.trim();
@@ -107,11 +118,6 @@ export function AuthDialog({ user, onUserChange }: AuthDialogProps) {
           <DialogTitle>
             {user ? "Личный кабинет" : mode === "login" ? "Вход" : "Регистрация"}
           </DialogTitle>
-          <DialogDescription>
-            {user
-              ? "Управление профилем и сессией."
-              : "Войдите в аккаунт или зарегистрируйтесь."}
-          </DialogDescription>
         </DialogHeader>
         {user ? (
           <div className="grid gap-3">

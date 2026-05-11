@@ -7,14 +7,17 @@ import {
   addOutfitToCart,
   createOutfit,
   deleteOutfit,
+  fetchMe,
   fetchMyOutfits,
   fetchProducts,
   updateOutfit,
 } from "@/lib/api";
+import { requestAuthRequired } from "@/lib/auth-required";
 import { OutfitPreview } from "@/components/features/outfits/outfit-preview";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { useToast } from "@/components/ui/toast";
 
 const CANVAS_WIDTH = 430;
 const CANVAS_HEIGHT = 620;
@@ -67,6 +70,7 @@ export function ConstructorEditor() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState("");
+  const { showToast } = useToast();
   const dragStateRef = useRef<{
     nodeId: string;
     offsetX: number;
@@ -268,6 +272,14 @@ export function ConstructorEditor() {
   }
 
   async function onSaveOutfit() {
+    try {
+      await fetchMe();
+    } catch {
+      setStatus("Войдите в аккаунт, чтобы работать с Моими образами.");
+      requestAuthRequired(showToast, "outfitSave");
+      return;
+    }
+
     if (!name.trim() || canvasItems.length === 0) {
       setStatus("Введите название и добавьте хотя бы 1 товар на полотно.");
       return;
@@ -291,6 +303,7 @@ export function ConstructorEditor() {
       await loadOutfits();
     } catch {
       setStatus("Не удалось сохранить образ. Проверьте авторизацию.");
+      requestAuthRequired(showToast, "outfitSave");
     }
   }
 

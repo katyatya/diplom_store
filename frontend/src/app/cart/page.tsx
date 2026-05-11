@@ -12,8 +12,10 @@ import {
   updateCartItem,
   updateGuestCartItem,
 } from "@/lib/api";
+import { requestAuthRequired } from "@/lib/auth-required";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { useToast } from "@/components/ui/toast";
 
 type DisplayCartItem = {
   id: string;
@@ -27,6 +29,7 @@ export default function CartPage() {
   const [guestItems, setGuestItems] = useState<GuestCartItem[]>([]);
   const [authorized, setAuthorized] = useState(false);
   const [status, setStatus] = useState("");
+  const { showToast } = useToast();
 
   async function load() {
     try {
@@ -140,11 +143,18 @@ export default function CartPage() {
       <p>
         <strong>Итого: {total.toLocaleString("ru-RU")} руб</strong>
       </p>
-      <Button asChild className="w-fit">
-        <Link href={authorized ? "/checkout" : "/"}>
-          {authorized ? "Перейти к оформлению" : "Войти для оформления заказа"}
-        </Link>
-      </Button>
+      {authorized ? (
+        <Button asChild className="w-fit">
+          <Link href="/checkout">Перейти к оформлению</Link>
+        </Button>
+      ) : (
+        <Button
+          className="w-fit"
+          onClick={() => requestAuthRequired(showToast, "checkout")}
+        >
+          Войти для оформления заказа
+        </Button>
+      )}
     </section>
   );
 }
