@@ -15,6 +15,7 @@ async function main(): Promise<void> {
 
   const admin = await prisma.user.create({
     data: {
+      name: "Администратор",
       email: "admin@fashionstore.local",
       passwordHash: adminPasswordHash,
       role: "ADMIN",
@@ -23,6 +24,7 @@ async function main(): Promise<void> {
 
   const user = await prisma.user.create({
     data: {
+      name: "Покупатель",
       email: "user@fashionstore.local",
       passwordHash: userPasswordHash,
       role: "USER",

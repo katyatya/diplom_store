@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { fetchMe } from "@/lib/api";
-import { AuthDialog, type AuthUser } from "@/components/features/auth/auth-dialog";
+import { type AuthUser, fetchMe } from "@/lib/api";
+import { AuthDialog } from "@/components/features/auth/auth-dialog";
 
 const navLinks: Array<{ href: string; label: string }> = [
   { href: "/", label: "Главная" },

@@ -1,14 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Order, fetchMyOrders } from "@/lib/api";
+import { AuthUser, Order, fetchMe, fetchMyOrders } from "@/lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 
 export default function ProfilePage() {
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [status, setStatus] = useState("");
 
   useEffect(() => {
+    void fetchMe()
+      .then(setUser)
+      .catch(() => setUser(null));
     void fetchMyOrders()
       .then(setOrders)
       .catch(() => setStatus("Войдите в аккаунт, чтобы посмотреть историю заказов."));
@@ -17,6 +21,11 @@ export default function ProfilePage() {
   return (
     <section className="grid gap-4">
       <h1 className="text-3xl font-semibold tracking-tight">Личный профиль</h1>
+      {user ? (
+        <p className="text-sm text-muted-foreground">
+          {user.name || "Пользователь"} ({user.email})
+        </p>
+      ) : null}
       <h2 className="text-xl font-semibold">Мои заказы</h2>
       {status ? <p className="text-sm text-muted-foreground">{status}</p> : null}
       {orders.length === 0 ? <p className="text-sm text-muted-foreground">Заказов пока нет.</p> : null}

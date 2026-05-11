@@ -3,7 +3,13 @@
 import Link from "next/link";
 import { UserRound } from "lucide-react";
 import { FormEvent, useState } from "react";
-import { login, logout, mergeGuestCartToServer, register } from "@/lib/api";
+import {
+  type AuthUser,
+  login,
+  logout,
+  mergeGuestCartToServer,
+  register,
+} from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -19,8 +25,6 @@ import { useToast } from "@/components/ui/toast";
 
 type AuthMode = "login" | "register";
 
-export type AuthUser = { sub: string; email: string; role: "USER" | "ADMIN" };
-
 type AuthDialogProps = {
   user: AuthUser | null;
   onUserChange: (user: AuthUser | null) => void;
@@ -29,20 +33,40 @@ type AuthDialogProps = {
 export function AuthDialog({ user, onUserChange }: AuthDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [mode, setMode] = useState<AuthMode>("login");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("user@fashionstore.local");
   const [password, setPassword] = useState("User123!");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { showToast } = useToast();
+
+  function validateName(rawName: string): string | null {
+    const trimmed = rawName.trim();
+    if (trimmed.length < 2) return "Имя должно быть не короче 2 символов.";
+    if (trimmed.length > 50) return "Имя должно быть не длиннее 50 символов.";
+    const isValid = /^[A-Za-zА-Яа-яЁё\s'-]+$/u.test(trimmed);
+    if (!isValid) {
+      return "Имя может содержать только буквы, пробел, апостроф и дефис.";
+    }
+    return null;
+  }
 
   async function onAuthSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setIsSubmitting(true);
 
     try {
+      if (mode === "register") {
+        const validationError = validateName(name);
+        if (validationError) {
+          showToast(validationError, "error");
+          return;
+        }
+      }
+
       const payload =
         mode === "login"
           ? await login(email.trim(), password)
-          : await register(email.trim(), password);
+          : await register(name.trim(), email.trim(), password);
 
       await mergeGuestCartToServer();
       onUserChange(payload.user);
@@ -91,7 +115,9 @@ export function AuthDialog({ user, onUserChange }: AuthDialogProps) {
         </DialogHeader>
         {user ? (
           <div className="grid gap-3">
-            <p className="text-sm text-muted-foreground">Вы вошли как {user.email}</p>
+            <p className="text-sm text-muted-foreground">
+              Вы вошли как {user.name || "Пользователь"} ({user.email})
+            </p>
             <Button asChild variant="secondary" onClick={() => setIsOpen(false)}>
               <Link href="/profile">Перейти в профиль</Link>
             </Button>
@@ -111,9 +137,12 @@ export function AuthDialog({ user, onUserChange }: AuthDialogProps) {
             </TabsList>
             <TabsContent value="login" className="mt-0">
               <AuthForm
+                mode="login"
+                name={name}
                 email={email}
                 password={password}
                 isSubmitting={isSubmitting}
+                onNameChange={setName}
                 onEmailChange={setEmail}
                 onPasswordChange={setPassword}
                 onSubmit={onAuthSubmit}
@@ -122,9 +151,12 @@ export function AuthDialog({ user, onUserChange }: AuthDialogProps) {
             </TabsContent>
             <TabsContent value="register" className="mt-0">
               <AuthForm
+                mode="register"
+                name={name}
                 email={email}
                 password={password}
                 isSubmitting={isSubmitting}
+                onNameChange={setName}
                 onEmailChange={setEmail}
                 onPasswordChange={setPassword}
                 onSubmit={onAuthSubmit}
@@ -139,26 +171,44 @@ export function AuthDialog({ user, onUserChange }: AuthDialogProps) {
 }
 
 type AuthFormProps = {
+  mode: AuthMode;
+  name: string;
   email: string;
   password: string;
   isSubmitting: boolean;
   submitLabel: string;
+  onNameChange: (nextValue: string) => void;
   onEmailChange: (nextValue: string) => void;
   onPasswordChange: (nextValue: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => Promise<void>;
 };
 
 function AuthForm({
+  mode,
+  name,
   email,
   password,
   isSubmitting,
   submitLabel,
+  onNameChange,
   onEmailChange,
   onPasswordChange,
   onSubmit,
 }: AuthFormProps) {
   return (
     <form className="grid gap-3" onSubmit={(event) => void onSubmit(event)}>
+      {mode === "register" ? (
+        <Input
+          value={name}
+          onChange={(event) => onNameChange(event.target.value)}
+          placeholder="Имя"
+          type="text"
+          autoComplete="name"
+          minLength={2}
+          maxLength={50}
+          required
+        />
+      ) : null}
       <Input
         value={email}
         onChange={(event) => onEmailChange(event.target.value)}
