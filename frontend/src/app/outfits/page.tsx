@@ -8,7 +8,7 @@ import {
   fetchProducts,
   fetchStylistLooks,
 } from "@/lib/api";
-import { OutfitPreview } from "@/components/outfit-preview";
+import { OutfitPreview } from "@/components/features/outfits/outfit-preview";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 

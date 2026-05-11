@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 
 const ConstructorEditor = dynamic(
   () =>
-    import("@/components/constructor-editor").then(
+    import("@/components/features/outfits/constructor-editor").then(
       (module) => module.ConstructorEditor,
     ),
   {

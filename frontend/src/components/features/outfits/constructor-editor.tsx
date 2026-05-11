@@ -11,7 +11,7 @@ import {
   fetchProducts,
   updateOutfit,
 } from "@/lib/api";
-import { OutfitPreview } from "@/components/outfit-preview";
+import { OutfitPreview } from "@/components/features/outfits/outfit-preview";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -336,16 +336,16 @@ export function ConstructorEditor() {
               placeholder="Название образа"
             />
             <Input
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Описание (необязательно)"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Описание (необязательно)"
             />
           </div>
 
           <div className="mt-3 grid items-start gap-4 xl:grid-cols-[320px_minmax(460px,1fr)_260px]">
             <div className="grid max-h-[620px] gap-2 overflow-auto pr-1">
               <strong>Товары из каталога</strong>
-            {products.map((product) => (
+              {products.map((product) => (
                 <article key={product.id} className="grid gap-2 rounded-lg border p-2">
                   <span>{product.name}</span>
                   <span className="text-sm text-muted-foreground">
@@ -355,7 +355,7 @@ export function ConstructorEditor() {
                     Добавить на полотно
                   </Button>
                 </article>
-            ))}
+              ))}
             </div>
 
             <div
@@ -434,86 +434,86 @@ export function ConstructorEditor() {
 
             <aside className="grid gap-2 rounded-lg border p-3">
               <strong>Настройки</strong>
-            {selectedItem ? (
-              <>
-                <label className="grid gap-1 text-sm">
-                  X
-                  <Input
-                    type="number"
-                    value={Math.round(selectedItem.x)}
-                    onChange={(event) =>
-                      updateCanvasItem(selectedItem.nodeId, { x: Number(event.target.value) })
-                    }
-                  />
-                </label>
-                <label className="grid gap-1 text-sm">
-                  Y
-                  <Input
-                    type="number"
-                    value={Math.round(selectedItem.y)}
-                    onChange={(event) =>
-                      updateCanvasItem(selectedItem.nodeId, { y: Number(event.target.value) })
-                    }
-                  />
-                </label>
-                <label className="grid gap-1 text-sm">
-                  Ширина
-                  <Input
-                    type="number"
-                    min={60}
-                    value={Math.round(selectedItem.width)}
-                    onChange={(event) =>
-                      updateCanvasItem(selectedItem.nodeId, {
-                        width: Math.max(60, Number(event.target.value)),
-                      })
-                    }
-                  />
-                </label>
-                <label className="grid gap-1 text-sm">
-                  Высота
-                  <Input
-                    type="number"
-                    min={60}
-                    value={Math.round(selectedItem.height)}
-                    onChange={(event) =>
-                      updateCanvasItem(selectedItem.nodeId, {
-                        height: Math.max(60, Number(event.target.value)),
-                      })
-                    }
-                  />
-                </label>
-                <label className="grid gap-1 text-sm">
-                  Поворот
-                  <input
-                    className="accent-primary"
-                    type="range"
-                    min={-180}
-                    max={180}
-                    value={Math.round(selectedItem.rotation)}
-                    onChange={(event) =>
-                      updateCanvasItem(selectedItem.nodeId, {
-                        rotation: Number(event.target.value),
-                      })
-                    }
-                  />
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  <Button size="sm" variant="secondary" onClick={bringSelectedForward}>
-                    Слой выше
-                  </Button>
-                  <Button size="sm" variant="secondary" onClick={sendSelectedBackward}>
-                    Слой ниже
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={removeSelectedItem}>
-                    Удалить с полотна
-                  </Button>
-                </div>
-              </>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                Выберите товар на полотне для изменения размера и размещения.
-              </p>
-            )}
+              {selectedItem ? (
+                <>
+                  <label className="grid gap-1 text-sm">
+                    X
+                    <Input
+                      type="number"
+                      value={Math.round(selectedItem.x)}
+                      onChange={(event) =>
+                        updateCanvasItem(selectedItem.nodeId, { x: Number(event.target.value) })
+                      }
+                    />
+                  </label>
+                  <label className="grid gap-1 text-sm">
+                    Y
+                    <Input
+                      type="number"
+                      value={Math.round(selectedItem.y)}
+                      onChange={(event) =>
+                        updateCanvasItem(selectedItem.nodeId, { y: Number(event.target.value) })
+                      }
+                    />
+                  </label>
+                  <label className="grid gap-1 text-sm">
+                    Ширина
+                    <Input
+                      type="number"
+                      min={60}
+                      value={Math.round(selectedItem.width)}
+                      onChange={(event) =>
+                        updateCanvasItem(selectedItem.nodeId, {
+                          width: Math.max(60, Number(event.target.value)),
+                        })
+                      }
+                    />
+                  </label>
+                  <label className="grid gap-1 text-sm">
+                    Высота
+                    <Input
+                      type="number"
+                      min={60}
+                      value={Math.round(selectedItem.height)}
+                      onChange={(event) =>
+                        updateCanvasItem(selectedItem.nodeId, {
+                          height: Math.max(60, Number(event.target.value)),
+                        })
+                      }
+                    />
+                  </label>
+                  <label className="grid gap-1 text-sm">
+                    Поворот
+                    <input
+                      className="accent-primary"
+                      type="range"
+                      min={-180}
+                      max={180}
+                      value={Math.round(selectedItem.rotation)}
+                      onChange={(event) =>
+                        updateCanvasItem(selectedItem.nodeId, {
+                          rotation: Number(event.target.value),
+                        })
+                      }
+                    />
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    <Button size="sm" variant="secondary" onClick={bringSelectedForward}>
+                      Слой выше
+                    </Button>
+                    <Button size="sm" variant="secondary" onClick={sendSelectedBackward}>
+                      Слой ниже
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={removeSelectedItem}>
+                      Удалить с полотна
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Выберите товар на полотне для изменения размера и размещения.
+                </p>
+              )}
             </aside>
           </div>
 
@@ -536,30 +536,30 @@ export function ConstructorEditor() {
             <p className="text-sm text-muted-foreground">Пока нет сохраненных образов.</p>
           ) : null}
           <div className="grid gap-3">
-          {myOutfits.map((outfit) => (
+            {myOutfits.map((outfit) => (
               <article
                 key={outfit.id}
                 className="grid gap-3 rounded-lg border p-3 md:grid-cols-[180px_1fr] md:items-start"
               >
-              <OutfitPreview items={outfit.items} productsById={productsById} width={160} height={220} />
-              <div className="grid gap-1">
-                <strong>{outfit.name}</strong>
-                <p className="text-sm text-muted-foreground">{outfit.description || "Без описания"}</p>
-                <p className="text-sm text-muted-foreground">Позиции: {outfit.items.length}</p>
-                <div className="flex flex-wrap gap-2">
-                  <Button size="sm" variant="secondary" onClick={() => loadOutfitToCanvas(outfit)}>
-                    Открыть в конструкторе
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={() => void onDeleteOutfit(outfit.id)}>
-                    Удалить
-                  </Button>
-                  <Button size="sm" onClick={() => void onAddOutfitToCart(outfit.id)}>
-                    Добавить в корзину
-                  </Button>
+                <OutfitPreview items={outfit.items} productsById={productsById} width={160} height={220} />
+                <div className="grid gap-1">
+                  <strong>{outfit.name}</strong>
+                  <p className="text-sm text-muted-foreground">{outfit.description || "Без описания"}</p>
+                  <p className="text-sm text-muted-foreground">Позиции: {outfit.items.length}</p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button size="sm" variant="secondary" onClick={() => loadOutfitToCanvas(outfit)}>
+                      Открыть в конструкторе
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => void onDeleteOutfit(outfit.id)}>
+                      Удалить
+                    </Button>
+                    <Button size="sm" onClick={() => void onAddOutfitToCart(outfit.id)}>
+                      Добавить в корзину
+                    </Button>
+                  </div>
                 </div>
-              </div>
               </article>
-          ))}
+            ))}
           </div>
         </CardContent>
       </Card>
