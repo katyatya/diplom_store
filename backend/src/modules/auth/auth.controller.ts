@@ -86,8 +86,8 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard)
   @Get("me")
-  me(@CurrentUser() user: JwtUser): JwtUser {
-    return user;
+  me(@CurrentUser() user: JwtUser): Promise<JwtUser> {
+    return this.authService.me(user.sub);
   }
 
   @Post("refresh")

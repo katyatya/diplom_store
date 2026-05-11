@@ -1,0 +1,62 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --background: 220 33% 98%;
+    --foreground: 225 23% 16%;
+    --card: 0 0% 100%;
+    --card-foreground: 225 23% 16%;
+    --primary: 244 76% 59%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 22% 94%;
+    --secondary-foreground: 223 23% 20%;
+    --muted: 220 20% 96%;
+    --muted-foreground: 220 12% 46%;
+    --accent: 232 100% 97%;
+    --accent-foreground: 225 23% 16%;
+    --destructive: 0 70% 46%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 20% 90%;
+    --input: 220 20% 90%;
+    --ring: 244 76% 59%;
+    --radius: 0.8rem;
+  }
+
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  body {
+    min-height: 100vh;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: Inter, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer utilities {
+  @keyframes toast-in-out {
+    0% {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    10% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    85% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(-6px);
+    }
+  }
+
+  .toast-in-out {
+    animation: toast-in-out 2.8s ease forwards;
+  }
+}

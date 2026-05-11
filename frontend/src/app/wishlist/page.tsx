@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { addToCart, fetchWishlist, removeFromWishlist } from "@/lib/api";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 
 type WishlistItem = Awaited<ReturnType<typeof fetchWishlist>>[number];
 
@@ -42,20 +44,34 @@ export default function WishlistPage() {
   }
 
   return (
-    <section style={{ display: "grid", gap: 14 }}>
-      <h1>Wishlist</h1>
-      <p>Избранные товары.</p>
-      {status ? <p>{status}</p> : null}
+    <section className="grid gap-4">
+      <h1 className="text-3xl font-semibold tracking-tight">Wishlist</h1>
+      <p className="text-sm text-muted-foreground">Избранные товары.</p>
+      {status ? <p className="text-sm text-muted-foreground">{status}</p> : null}
       {items.map((item) => (
-        <article key={item.id} style={{ border: "1px solid #ddd", borderRadius: 10, padding: 10 }}>
-          <h3>{item.product.name}</h3>
-          <p>{Number(item.product.price).toLocaleString("ru-RU")} руб</p>
-          <div style={{ display: "flex", gap: 8 }}>
-            <Link href={`/catalog/${item.product.id}`}>Карточка</Link>
-            <button onClick={() => void onMoveToCart(item.product.id)}>В корзину</button>
-            <button onClick={() => void onRemove(item.product.id)}>Удалить</button>
-          </div>
-        </article>
+        <Card key={item.id}>
+          <CardContent className="grid gap-3 p-4">
+            <h3 className="font-medium">{item.product.name}</h3>
+            <p className="text-sm text-muted-foreground">
+              {Number(item.product.price).toLocaleString("ru-RU")} руб
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button asChild variant="secondary" size="sm">
+                <Link href={`/catalog/${item.product.id}`}>Карточка</Link>
+              </Button>
+              <Button size="sm" onClick={() => void onMoveToCart(item.product.id)}>
+                В корзину
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => void onRemove(item.product.id)}
+              >
+                Удалить
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       ))}
     </section>
   );

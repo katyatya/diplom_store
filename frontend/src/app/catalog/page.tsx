@@ -9,6 +9,8 @@ import {
   fetchCategories,
   fetchProducts,
 } from "@/lib/api";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function CatalogPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -52,39 +54,60 @@ export default function CatalogPage() {
   }
 
   return (
-    <section style={{ display: "grid", gap: 16 }}>
-      <h1>Каталог</h1>
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        <button onClick={() => setActiveCategory("")} disabled={!activeCategory}>
+    <section className="grid gap-4">
+      <h1 className="text-3xl font-semibold tracking-tight">Каталог</h1>
+      <div className="flex flex-wrap gap-2">
+        <Button
+          variant={activeCategory ? "outline" : "secondary"}
+          onClick={() => setActiveCategory("")}
+          disabled={!activeCategory}
+        >
           Все категории
-        </button>
+        </Button>
         {categories.map((category) => (
-          <button
+          <Button
             key={category}
             onClick={() => setActiveCategory(category)}
-            style={{
-              backgroundColor: activeCategory === category ? "#222" : "white",
-              color: activeCategory === category ? "white" : "black",
-            }}
+            variant={activeCategory === category ? "default" : "outline"}
           >
             {category}
-          </button>
+          </Button>
         ))}
       </div>
-      {status ? <p style={{ color: "#2a5" }}>{status}</p> : null}
-      <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
+      {status ? <p className="text-sm text-emerald-600">{status}</p> : null}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {products.map((product) => (
-          <article key={product.id} style={{ border: "1px solid #ddd", borderRadius: 10, padding: 10 }}>
-            <img src={product.imageUrl} alt={product.name} style={{ width: "100%", height: 180, objectFit: "cover" }} />
-            <h3 style={{ marginBottom: 6 }}>{product.name}</h3>
-            <p style={{ margin: "4px 0" }}>{product.category}</p>
-            <p>{Number(product.price).toLocaleString("ru-RU")} руб</p>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <Link href={`/catalog/${product.id}`}>Подробнее</Link>
-              <button onClick={() => void onAddToCart(product)}>В корзину</button>
-              <button onClick={() => void onAddToWishlist(product.id)}>В избранное</button>
-            </div>
-          </article>
+          <Card key={product.id} className="overflow-hidden">
+            <CardHeader className="p-3 pb-0">
+              <img
+                src={product.imageUrl}
+                alt={product.name}
+                className="h-44 w-full rounded-md object-cover"
+              />
+            </CardHeader>
+            <CardContent className="grid gap-2 p-3">
+              <CardTitle className="text-base">{product.name}</CardTitle>
+              <p className="text-sm text-muted-foreground">{product.category}</p>
+              <p className="text-sm">
+                {Number(product.price).toLocaleString("ru-RU")} руб
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Button asChild variant="secondary" size="sm">
+                  <Link href={`/catalog/${product.id}`}>Подробнее</Link>
+                </Button>
+                <Button size="sm" onClick={() => void onAddToCart(product)}>
+                  В корзину
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => void onAddToWishlist(product.id)}
+                >
+                  В избранное
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         ))}
       </div>
     </section>

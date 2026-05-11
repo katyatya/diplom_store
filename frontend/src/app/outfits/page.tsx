@@ -8,7 +8,9 @@ import {
   fetchProducts,
   fetchStylistLooks,
 } from "@/lib/api";
-import { OutfitPreview } from "@/components/outfit-preview";
+import { OutfitPreview } from "@/components/features/outfits/outfit-preview";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 
 export default function StylistOutfitsPage() {
   const [outfits, setOutfits] = useState<Outfit[]>([]);
@@ -39,30 +41,23 @@ export default function StylistOutfitsPage() {
   }
 
   return (
-    <section style={{ display: "grid", gap: 16 }}>
-      <h1>Готовые образы от стилистов</h1>
-      {status ? <p>{status}</p> : null}
+    <section className="grid gap-4">
+      <h1 className="text-3xl font-semibold tracking-tight">Готовые образы от стилистов</h1>
+      {status ? <p className="text-sm text-muted-foreground">{status}</p> : null}
       {outfits.map((outfit) => (
-        <article
-          key={outfit.id}
-          style={{
-            border: "1px solid #ddd",
-            borderRadius: 10,
-            padding: 12,
-            display: "grid",
-            gridTemplateColumns: "190px 1fr",
-            gap: 12,
-            alignItems: "start",
-          }}
-        >
-          <OutfitPreview items={outfit.items} productsById={productsById} width={170} height={230} />
-          <div>
-            <h3>{outfit.name}</h3>
-            <p>{outfit.description || "Без описания."}</p>
-            <p>Позиции в образе: {outfit.items.length}</p>
-            <button onClick={() => void onAddToCart(outfit.id)}>Добавить весь образ в корзину</button>
-          </div>
-        </article>
+        <Card key={outfit.id}>
+          <CardContent className="grid gap-3 p-4 md:grid-cols-[190px_1fr] md:items-start">
+            <OutfitPreview items={outfit.items} productsById={productsById} width={170} height={230} />
+            <div className="grid gap-2">
+              <h3 className="text-lg font-medium">{outfit.name}</h3>
+              <p className="text-sm text-muted-foreground">{outfit.description || "Без описания."}</p>
+              <p className="text-sm">Позиции в образе: {outfit.items.length}</p>
+              <Button className="w-fit" onClick={() => void onAddToCart(outfit.id)}>
+                Добавить весь образ в корзину
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       ))}
     </section>
   );

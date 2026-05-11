@@ -27,6 +27,7 @@ enum OrderStatus {
 
 model User {
   id           String    @id @default(cuid())
+  name         String    @default("Пользователь")
   email        String    @unique
   passwordHash String
   refreshTokenHash String?

@@ -117,7 +117,11 @@ export function OutfitCanvas({
     <Stage
       width={width}
       height={height}
-      style={{ border: "1px solid #d7d7d7", borderRadius: 10, backgroundColor: "#ffffff" }}
+      style={{
+        border: "1px solid hsl(var(--border))",
+        borderRadius: 10,
+        backgroundColor: "hsl(var(--card))",
+      }}
       onMouseDown={(event) => {
         if (event.target === event.target.getStage()) {
           onSelect(null);
@@ -130,7 +134,7 @@ export function OutfitCanvas({
       }}
     >
       <Layer>
-        <Rect x={0} y={0} width={width} height={height} fill="#fcfcfc" />
+        <Rect x={0} y={0} width={width} height={height} fill="hsl(220 20% 98%)" />
         {sortedItems.map((item) => {
           const product = productsById[item.productId];
           if (!product) return null;

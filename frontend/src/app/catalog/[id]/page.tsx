@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Product, addProductToCart, fetchProduct } from "@/lib/api";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 export default function ProductPage() {
   const params = useParams<{ id: string }>();
@@ -32,23 +34,31 @@ export default function ProductPage() {
   }
 
   if (!product) {
-    return <p>{status || "Загрузка..."}</p>;
+    return <p className="text-sm text-muted-foreground">{status || "Загрузка..."}</p>;
   }
 
   return (
-    <section style={{ display: "grid", gap: 14 }}>
-      <Link href="/catalog">Назад в каталог</Link>
-      <h1>{product.name}</h1>
-      <img src={product.imageUrl} alt={product.name} style={{ width: "100%", maxWidth: 520, borderRadius: 12 }} />
-      <p>Категория: {product.category}</p>
-      <p>{product.description || "Описание будет добавлено позже."}</p>
+    <section className="grid gap-4">
+      <Link className="text-sm text-muted-foreground hover:text-foreground" href="/catalog">
+        Назад в каталог
+      </Link>
+      <h1 className="text-3xl font-semibold tracking-tight">{product.name}</h1>
+      <Card className="w-full max-w-2xl overflow-hidden">
+        <img
+          src={product.imageUrl}
+          alt={product.name}
+          className="h-[420px] w-full object-cover"
+        />
+      </Card>
+      <p className="text-sm text-muted-foreground">Категория: {product.category}</p>
+      <p className="max-w-2xl">{product.description || "Описание будет добавлено позже."}</p>
       <p>
         <strong>{Number(product.price).toLocaleString("ru-RU")} руб</strong>
       </p>
-      <button style={{ width: "fit-content" }} onClick={() => void handleAddToCart()}>
+      <Button className="w-fit" onClick={() => void handleAddToCart()}>
         Добавить в корзину
-      </button>
-      {status ? <p>{status}</p> : null}
+      </Button>
+      {status ? <p className="text-sm text-muted-foreground">{status}</p> : null}
     </section>
   );
 }

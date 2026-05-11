@@ -1,6 +1,13 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 const GUEST_CART_KEY = "fashion_store_guest_cart";
 
+export type AuthUser = {
+  sub: string;
+  name: string;
+  email: string;
+  role: "USER" | "ADMIN";
+};
+
 export type Product = {
   id: string;
   name: string;
@@ -208,21 +215,25 @@ export function fetchHealthcheck(): Promise<{ status: string }> {
   return request<{ status: string }>("/health");
 }
 
-export function register(email: string, password: string): Promise<{ user: { sub: string; email: string; role: "USER" | "ADMIN" } }> {
+export function register(
+  name: string,
+  email: string,
+  password: string,
+): Promise<{ user: AuthUser }> {
   return request("/auth/register", {
     method: "POST",
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ name, email, password }),
   });
 }
 
-export function login(email: string, password: string): Promise<{ user: { sub: string; email: string; role: "USER" | "ADMIN" } }> {
+export function login(email: string, password: string): Promise<{ user: AuthUser }> {
   return request("/auth/login", {
     method: "POST",
     body: JSON.stringify({ email, password }),
   });
 }
 
-export function fetchMe(): Promise<{ sub: string; email: string; role: "USER" | "ADMIN" }> {
+export function fetchMe(): Promise<AuthUser> {
   return request("/auth/me", undefined, true);
 }
 

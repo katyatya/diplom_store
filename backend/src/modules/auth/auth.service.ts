@@ -40,12 +40,18 @@ export class AuthService {
     const passwordHash = await bcrypt.hash(dto.password, 10);
     const user = await this.prisma.user.create({
       data: {
+        name: dto.name.trim(),
         email: dto.email.toLowerCase(),
         passwordHash,
       },
     });
 
-    return this.issueTokensAndPersistRefresh(user.id, user.email, user.role);
+    return this.issueTokensAndPersistRefresh(
+      user.id,
+      dto.name.trim(),
+      user.email,
+      user.role,
+    );
   }
 
   async login(dto: LoginDto): Promise<AuthResult> {
@@ -61,7 +67,12 @@ export class AuthService {
       throw new UnauthorizedException("Invalid credentials");
     }
 
-    return this.issueTokensAndPersistRefresh(user.id, user.email, user.role);
+    return this.issueTokensAndPersistRefresh(
+      user.id,
+      this.readUserName(user, user.email),
+      user.email,
+      user.role,
+    );
   }
 
   async refresh(refreshToken: string): Promise<AuthResult> {
@@ -90,7 +101,12 @@ export class AuthService {
       throw new UnauthorizedException("Invalid refresh token");
     }
 
-    return this.issueTokensAndPersistRefresh(user.id, user.email, user.role);
+    return this.issueTokensAndPersistRefresh(
+      user.id,
+      this.readUserName(user, payload.name || user.email),
+      user.email,
+      user.role,
+    );
   }
 
   async logout(userId: string): Promise<void> {
@@ -103,12 +119,29 @@ export class AuthService {
     });
   }
 
+  async me(userId: string): Promise<JwtUser> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, name: true, email: true, role: true },
+    });
+    if (!user) {
+      throw new UnauthorizedException("User not found");
+    }
+    return {
+      sub: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    };
+  }
+
   private async issueTokensAndPersistRefresh(
     userId: string,
+    name: string,
     email: string,
     role: UserRole,
   ): Promise<AuthResult> {
-    const user: JwtUser = { sub: userId, email, role };
+    const user: JwtUser = { sub: userId, name, email, role };
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(user, {
         secret: this.getAccessSecret(),
@@ -157,5 +190,13 @@ export class AuthService {
       if (!Number.isNaN(parsed) && parsed > 0) return parsed;
     }
     return 30 * 24 * 60 * 60 * 1000;
+  }
+
+  private readUserName(user: unknown, fallback: string): string {
+    const candidate = (user as { name?: unknown }).name;
+    if (typeof candidate === "string" && candidate.trim().length > 0) {
+      return candidate.trim();
+    }
+    return fallback;
   }
 }

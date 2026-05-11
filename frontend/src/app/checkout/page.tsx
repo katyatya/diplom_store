@@ -4,6 +4,12 @@ import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useEffect } from "react";
 import { createOrder, fetchMe } from "@/lib/api";
+import { requestAuthRequired } from "@/lib/auth-required";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/components/ui/toast";
 
 export default function CheckoutPage() {
   const [authorized, setAuthorized] = useState(false);
@@ -14,15 +20,24 @@ export default function CheckoutPage() {
   const [deliveryType, setDeliveryType] = useState<"PICKUP" | "CDEK">("PICKUP");
   const [paymentMethod, setPaymentMethod] = useState("Онлайн");
   const [status, setStatus] = useState("");
+  const { showToast } = useToast();
 
   useEffect(() => {
     void fetchMe()
       .then(() => setAuthorized(true))
-      .catch(() => setAuthorized(false));
-  }, []);
+      .catch(() => {
+        setAuthorized(false);
+        requestAuthRequired(showToast, "checkout");
+      });
+  }, [showToast]);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!authorized) {
+      requestAuthRequired(showToast, "checkout");
+      return;
+    }
+
     try {
       const order = await createOrder({
         customerName,
@@ -41,42 +56,77 @@ export default function CheckoutPage() {
   }
 
   return (
-    <section style={{ display: "grid", gap: 16 }}>
-      <h1>Оформление заказа</h1>
+    <section className="grid gap-4">
+      <h1 className="text-3xl font-semibold tracking-tight">Оформление заказа</h1>
       {!authorized ? (
-        <p>
-          Оформление заказа доступно только после входа. <Link href="/">Войти</Link>
+        <p className="text-sm text-muted-foreground">
+          Оформление заказа доступно только после входа.{" "}
+          <Link className="underline" href="/">
+            Войти
+          </Link>
         </p>
       ) : null}
-      <form onSubmit={onSubmit} style={{ display: "grid", gap: 10, maxWidth: 520 }}>
-        <input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="ФИО" required />
-        <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Телефон" required />
-        <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" required />
-        <label>
-          Доставка:
-          <select
-            value={deliveryType}
-            onChange={(e) => setDeliveryType(e.target.value as "PICKUP" | "CDEK")}
-          >
-            <option value="PICKUP">Самовывоз (0 руб)</option>
-            <option value="CDEK">Доставка CDEK (370 руб)</option>
-          </select>
-        </label>
-        {deliveryType === "CDEK" ? (
-          <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Адрес доставки" required />
-        ) : null}
-        <label>
-          Оплата:
-          <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
-            <option value="Онлайн">Онлайн</option>
-            <option value="При получении">При получении</option>
-          </select>
-        </label>
-        <button type="submit" disabled={!authorized}>
-          Оформить заказ
-        </button>
-      </form>
-      {status ? <p>{status}</p> : null}
+      <Card className="max-w-xl">
+        <CardHeader>
+          <CardTitle>Данные получателя</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={onSubmit} className="grid gap-3">
+            <Input
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value)}
+              placeholder="ФИО"
+              required
+            />
+            <Input
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="Телефон"
+              required
+            />
+            <Input
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Email"
+              required
+            />
+            <Label className="grid gap-1">
+              <span>Доставка</span>
+              <select
+                className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+                value={deliveryType}
+                onChange={(e) => setDeliveryType(e.target.value as "PICKUP" | "CDEK")}
+              >
+                <option value="PICKUP">Самовывоз (0 руб)</option>
+                <option value="CDEK">Доставка CDEK (370 руб)</option>
+              </select>
+            </Label>
+            {deliveryType === "CDEK" ? (
+              <Input
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="Адрес доставки"
+                required
+              />
+            ) : null}
+            <Label className="grid gap-1">
+              <span>Оплата</span>
+              <select
+                className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+                value={paymentMethod}
+                onChange={(e) => setPaymentMethod(e.target.value)}
+              >
+                <option value="Онлайн">Онлайн</option>
+                <option value="При получении">При получении</option>
+              </select>
+            </Label>
+            <Button type="submit">
+              Оформить заказ
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+      {status ? <p className="text-sm text-muted-foreground">{status}</p> : null}
     </section>
   );
 }
