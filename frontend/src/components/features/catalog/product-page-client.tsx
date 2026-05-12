@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { Product, addProductToCart, fetchProduct } from "@/lib/api";
+import { Product, addProductToCart, fetchProduct, fetchProducts, fetchStylistLooks } from "@/lib/api";
+import { OutfitPreview } from "@/components/features/outfits/outfit-preview";
 import { getPrimaryProductImage, getProductImageUrls } from "@/lib/product-images";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/components/ui/toast";
 
 type ProductPageClientProps = {
@@ -14,11 +15,16 @@ type ProductPageClientProps = {
 
 export function ProductPageClient({ productSlug }: ProductPageClientProps) {
   const [product, setProduct] = useState<Product | null>(null);
+  const [relatedStylistLooks, setRelatedStylistLooks] = useState<Awaited<
+    ReturnType<typeof fetchStylistLooks>
+  >>([]);
+  const [productsById, setProductsById] = useState<Record<string, Product>>({});
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [status, setStatus] = useState("");
   const { showToast } = useToast();
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
+  const stylistLooksCarouselRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!productSlug) return;
@@ -29,6 +35,26 @@ export function ProductPageClient({ productSlug }: ProductPageClientProps) {
       })
       .catch(() => setStatus("Товар не найден."));
   }, [productSlug]);
+
+  useEffect(() => {
+    if (!product) return;
+    void Promise.all([fetchStylistLooks(), fetchProducts()])
+      .then(([stylistLooks, products]) => {
+        const matchingLooks = stylistLooks.filter((look) =>
+          look.items.some((item) => item.productId === product.id),
+        );
+        setRelatedStylistLooks(matchingLooks);
+        setProductsById(
+          products.reduce<Record<string, Product>>((acc, currentProduct) => {
+            acc[currentProduct.id] = currentProduct;
+            return acc;
+          }, {}),
+        );
+      })
+      .catch(() => {
+        setRelatedStylistLooks([]);
+      });
+  }, [product]);
 
   async function handleAddToCart() {
     if (!product) return;
@@ -57,6 +83,12 @@ export function ProductPageClient({ productSlug }: ProductPageClientProps) {
   function goToNextImage() {
     if (!hasMultipleImages) return;
     setActiveImageIndex((current) => (current + 1 >= images.length ? 0 : current + 1));
+  }
+
+  function scrollStylistLooks(direction: "left" | "right") {
+    if (!stylistLooksCarouselRef.current) return;
+    const delta = direction === "left" ? -320 : 320;
+    stylistLooksCarouselRef.current.scrollBy({ left: delta, behavior: "smooth" });
   }
 
   return (
@@ -151,6 +183,9 @@ export function ProductPageClient({ productSlug }: ProductPageClientProps) {
           >
             ДОБАВИТЬ В КОРЗИНУ
           </Button>
+          <Button asChild variant="outline" className="h-11 w-full rounded-none text-sm">
+            <Link href={`/outfit-builder?productId=${product.id}`}>СОБРАТЬ ОБРАЗ</Link>
+          </Button>
 
           <p className="text-sm leading-6 text-muted-foreground">
             {product.description || "Описание будет добавлено позже."}
@@ -162,6 +197,51 @@ export function ProductPageClient({ productSlug }: ProductPageClientProps) {
           </div>
         </aside>
       </div>
+      {relatedStylistLooks.length > 0 ? (
+        <section className="grid gap-3 pt-2">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-xl font-semibold">С чем можно носить</h2>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => scrollStylistLooks("left")}
+                aria-label="Прокрутить карусель влево"
+              >
+                ←
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => scrollStylistLooks("right")}
+                aria-label="Прокрутить карусель вправо"
+              >
+                →
+              </Button>
+            </div>
+          </div>
+          <div
+            ref={stylistLooksCarouselRef}
+            className="flex gap-3 overflow-x-auto pb-2 [scrollbar-width:thin] [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-muted-foreground/40 [&::-webkit-scrollbar-track]:bg-muted/50"
+          >
+            {relatedStylistLooks.map((look) => (
+              <Card key={look.id} className="min-w-[240px] max-w-[240px] shrink-0">
+                <CardContent className="grid gap-2 p-3">
+                  <OutfitPreview items={look.items} productsById={productsById} width={214} height={250} />
+                  <div className="grid gap-1">
+                    <p className="text-sm font-medium">{look.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {look.description || "Образ от стилиста"}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </section>
+      ) : null}
       {status ? <p className="text-sm text-muted-foreground">{status}</p> : null}
     </section>
   );

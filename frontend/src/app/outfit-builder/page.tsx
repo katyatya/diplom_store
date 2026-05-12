@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useSearchParams } from "next/navigation";
 
 const ConstructorEditor = dynamic(
   () =>
@@ -14,5 +15,8 @@ const ConstructorEditor = dynamic(
 );
 
 export default function OutfitBuilderPage() {
-  return <ConstructorEditor />;
+  const searchParams = useSearchParams();
+  const initialProductId = searchParams.get("productId") ?? undefined;
+
+  return <ConstructorEditor initialProductId={initialProductId} />;
 }

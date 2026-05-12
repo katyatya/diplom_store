@@ -1,12 +1,20 @@
 "use client";
 
-import { type MouseEvent as ReactMouseEvent, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type DragEvent as ReactDragEvent,
+  type MouseEvent as ReactMouseEvent,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   Outfit,
   Product,
   addOutfitToCart,
   createOutfit,
   deleteOutfit,
+  fetchCategories,
   fetchMe,
   fetchMyOutfits,
   fetchProducts,
@@ -37,6 +45,10 @@ type CanvasOutfitItem = {
   rotation: number;
 };
 
+type ConstructorEditorProps = {
+  initialProductId?: string;
+};
+
 function normalizeOutfitItems(items: Outfit["items"]): CanvasOutfitItem[] {
   return items.map((item, index) => ({
     nodeId: `${item.productId}-${index}-${Math.random().toString(36).slice(2, 8)}`,
@@ -62,8 +74,10 @@ function toApiPayload(items: CanvasOutfitItem[]): OutfitPlacement[] {
   }));
 }
 
-export function ConstructorEditor() {
+export function ConstructorEditor({ initialProductId }: ConstructorEditorProps) {
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
   const [myOutfits, setMyOutfits] = useState<Outfit[]>([]);
   const [canvasItems, setCanvasItems] = useState<CanvasOutfitItem[]>([]);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
@@ -86,9 +100,11 @@ export function ConstructorEditor() {
     itemX: number;
     itemY: number;
   } | null>(null);
+  const handledInitialProductIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     void fetchProducts().then(setProducts).catch(() => setProducts([]));
+    void fetchCategories().then(setCategories).catch(() => setCategories([]));
     void loadOutfits();
   }, []);
 
@@ -115,6 +131,23 @@ export function ConstructorEditor() {
     [canvasItems, selectedNodeId],
   );
 
+  const visibleProducts = useMemo(
+    () =>
+      selectedCategory === "ALL"
+        ? products
+        : products.filter((product) => product.category === selectedCategory),
+    [products, selectedCategory],
+  );
+
+  useEffect(() => {
+    if (!initialProductId || products.length === 0) return;
+    if (handledInitialProductIdRef.current === initialProductId) return;
+    const targetProduct = productsById[initialProductId];
+    if (!targetProduct) return;
+    addProductToCanvas(targetProduct);
+    handledInitialProductIdRef.current = initialProductId;
+  }, [initialProductId, products.length, productsById]);
+
   function addProductToCanvas(product: Product) {
     setCanvasItems((current) => [
       ...current,
@@ -129,6 +162,41 @@ export function ConstructorEditor() {
         rotation: 0,
       },
     ]);
+  }
+
+  function addProductToCanvasAtPosition(product: Product, x: number, y: number) {
+    const boundedX = Math.max(0, Math.min(x, CANVAS_WIDTH - DEFAULT_ITEM_WIDTH));
+    const boundedY = Math.max(0, Math.min(y, CANVAS_HEIGHT - DEFAULT_ITEM_HEIGHT));
+    setCanvasItems((current) => [
+      ...current,
+      {
+        nodeId: `${product.id}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        productId: product.id,
+        x: boundedX,
+        y: boundedY,
+        zIndex: current.length + 1,
+        width: DEFAULT_ITEM_WIDTH,
+        height: DEFAULT_ITEM_HEIGHT,
+        rotation: 0,
+      },
+    ]);
+  }
+
+  function onProductDragStart(event: ReactDragEvent<HTMLElement>, productId: string) {
+    event.dataTransfer.setData("text/plain", productId);
+    event.dataTransfer.effectAllowed = "copy";
+  }
+
+  function onCanvasDrop(event: ReactDragEvent<HTMLDivElement>) {
+    event.preventDefault();
+    const productId = event.dataTransfer.getData("text/plain");
+    if (!productId) return;
+    const product = productsById[productId];
+    if (!product) return;
+    const canvasRect = event.currentTarget.getBoundingClientRect();
+    const dropX = event.clientX - canvasRect.left - DEFAULT_ITEM_WIDTH / 2;
+    const dropY = event.clientY - canvasRect.top - DEFAULT_ITEM_HEIGHT / 2;
+    addProductToCanvasAtPosition(product, dropX, dropY);
   }
 
   function updateCanvasItem(nodeId: string, patch: Partial<CanvasOutfitItem>) {
@@ -356,26 +424,76 @@ export function ConstructorEditor() {
             />
           </div>
 
-          <div className="mt-3 grid items-start gap-4 xl:grid-cols-[320px_minmax(460px,1fr)_260px]">
-            <div className="grid max-h-[620px] gap-2 overflow-auto pr-1">
+          <div className="mt-3 grid items-start gap-4 xl:grid-cols-[390px_minmax(460px,1fr)_260px]">
+            <div className="grid max-h-[620px] gap-3 overflow-hidden rounded-lg border p-3">
               <strong>Товары из каталога</strong>
-              {products.map((product) => (
-                <article key={product.id} className="grid gap-2 rounded-lg border p-2">
-                  <span>{product.name}</span>
-                  <span className="text-sm text-muted-foreground">
-                    {Number(product.price).toLocaleString("ru-RU")} руб
-                  </span>
-                  <Button size="sm" onClick={() => addProductToCanvas(product)}>
-                    Добавить на полотно
-                  </Button>
-                </article>
-              ))}
+              <div className="grid min-h-0 flex-1 gap-3 md:grid-cols-[145px_minmax(0,1fr)]">
+                <aside className="grid content-start gap-2 overflow-auto pr-1">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedCategory("ALL")}
+                    className={`rounded-md border px-2 py-1 text-left text-sm transition-colors ${
+                      selectedCategory === "ALL"
+                        ? "border-foreground bg-accent/40"
+                        : "hover:bg-accent/30"
+                    }`}
+                  >
+                    Все категории
+                  </button>
+                  {categories.map((category) => (
+                    <button
+                      key={category}
+                      type="button"
+                      onClick={() => setSelectedCategory(category)}
+                      className={`rounded-md border px-2 py-1 text-left text-sm transition-colors ${
+                        selectedCategory === category
+                          ? "border-foreground bg-accent/40"
+                          : "hover:bg-accent/30"
+                      }`}
+                    >
+                      {category}
+                    </button>
+                  ))}
+                </aside>
+
+                <div className="grid auto-rows-[96px] content-start gap-2 overflow-y-scroll pr-1 [max-height:calc(4*96px+3*0.5rem)] [scrollbar-color:hsl(var(--muted-foreground))_hsl(var(--muted))] [scrollbar-gutter:stable] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-muted-foreground/40 [&::-webkit-scrollbar-track]:bg-muted/50">
+                  {visibleProducts.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">В этой категории пока нет товаров.</p>
+                  ) : null}
+                  {visibleProducts.map((product) => (
+                    <article
+                      key={product.id}
+                      onClick={() => addProductToCanvas(product)}
+                      draggable
+                      onDragStart={(event) => onProductDragStart(event, product.id)}
+                      className="grid h-full cursor-pointer gap-2 rounded-lg border p-2 transition-colors hover:bg-accent/30 md:grid-cols-[64px_minmax(0,1fr)]"
+                    >
+                      <img
+                        src={getPrimaryProductImage(product)}
+                        alt={product.name}
+                        className="h-16 w-16 rounded-md border object-cover"
+                      />
+                      <div className="grid gap-2">
+                        <span className="line-clamp-2">{product.name}</span>
+                        <span className="text-sm text-muted-foreground">
+                          {Number(product.price).toLocaleString("ru-RU")} руб
+                        </span>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </div>
             </div>
 
             <div
               id="outfit-constructor-canvas"
-              className="relative overflow-hidden rounded-lg border bg-card"
+              className="relative mx-auto overflow-hidden rounded-lg border bg-card xl:mx-0"
               style={{ width: CANVAS_WIDTH, height: CANVAS_HEIGHT }}
+              onDragOver={(event) => {
+                event.preventDefault();
+                event.dataTransfer.dropEffect = "copy";
+              }}
+              onDrop={onCanvasDrop}
               onMouseDown={(event) => {
                 if (event.target === event.currentTarget) {
                   setSelectedNodeId(null);
@@ -436,7 +554,7 @@ export function ConstructorEditor() {
                             event.stopPropagation();
                             removeItemFromCanvas(item.nodeId);
                           }}
-                          className="absolute -right-2 -top-2 h-5 w-5 rounded-full border border-destructive text-destructive"
+                          className="absolute -right-2 -top-2 inline-flex h-5 w-5 items-center justify-center rounded-full border border-destructive bg-white text-sm font-semibold leading-none text-destructive transition-colors hover:bg-destructive hover:text-red-500"
                         >
                           ×
                         </button>
@@ -450,52 +568,6 @@ export function ConstructorEditor() {
               <strong>Настройки</strong>
               {selectedItem ? (
                 <>
-                  <label className="grid gap-1 text-sm">
-                    X
-                    <Input
-                      type="number"
-                      value={Math.round(selectedItem.x)}
-                      onChange={(event) =>
-                        updateCanvasItem(selectedItem.nodeId, { x: Number(event.target.value) })
-                      }
-                    />
-                  </label>
-                  <label className="grid gap-1 text-sm">
-                    Y
-                    <Input
-                      type="number"
-                      value={Math.round(selectedItem.y)}
-                      onChange={(event) =>
-                        updateCanvasItem(selectedItem.nodeId, { y: Number(event.target.value) })
-                      }
-                    />
-                  </label>
-                  <label className="grid gap-1 text-sm">
-                    Ширина
-                    <Input
-                      type="number"
-                      min={60}
-                      value={Math.round(selectedItem.width)}
-                      onChange={(event) =>
-                        updateCanvasItem(selectedItem.nodeId, {
-                          width: Math.max(60, Number(event.target.value)),
-                        })
-                      }
-                    />
-                  </label>
-                  <label className="grid gap-1 text-sm">
-                    Высота
-                    <Input
-                      type="number"
-                      min={60}
-                      value={Math.round(selectedItem.height)}
-                      onChange={(event) =>
-                        updateCanvasItem(selectedItem.nodeId, {
-                          height: Math.max(60, Number(event.target.value)),
-                        })
-                      }
-                    />
-                  </label>
                   <label className="grid gap-1 text-sm">
                     Поворот
                     <input
@@ -513,10 +585,10 @@ export function ConstructorEditor() {
                   </label>
                   <div className="flex flex-wrap gap-2">
                     <Button size="sm" variant="secondary" onClick={bringSelectedForward}>
-                      Слой выше
+                      ↑ Слой выше
                     </Button>
                     <Button size="sm" variant="secondary" onClick={sendSelectedBackward}>
-                      Слой ниже
+                      ↓ Слой ниже
                     </Button>
                     <Button size="sm" variant="ghost" onClick={removeSelectedItem}>
                       Удалить с полотна
@@ -533,7 +605,12 @@ export function ConstructorEditor() {
 
           <p className="text-sm text-muted-foreground">Товаров на полотне: {canvasItems.length}</p>
           <div className="flex flex-wrap gap-2">
-            <Button onClick={() => void onSaveOutfit()}>Сохранить в "Мои образы"</Button>
+            <Button
+              onClick={() => void onSaveOutfit()}
+              className="bg-[#bcefea] font-semibold text-[#0f4f4b] shadow-sm hover:bg-pink-300"
+            >
+              Сохранить в "Мои образы"
+            </Button>
             <Button variant="outline" onClick={resetDraft}>
               Очистить полотно
             </Button>
