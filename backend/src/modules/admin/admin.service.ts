@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
-import { Prisma } from "@prisma/client";
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { OrderStatus, Prisma } from "@prisma/client";
 import { PrismaService } from "../../prisma/prisma.service";
 import { CreateProductDto } from "../catalog/dto/create-product.dto";
 import { CreateBannerDto } from "./dto/create-banner.dto";
 import { CreateStylistLookDto } from "./dto/create-stylist-look.dto";
+import { UpdateOrderStatusDto } from "./dto/update-order-status.dto";
 import { UpdateBannerDto } from "./dto/update-banner.dto";
 import { UpdateProductAdminDto } from "./dto/update-product-admin.dto";
 import { UpdateStylistLookDto } from "./dto/update-stylist-look.dto";
@@ -11,6 +12,24 @@ import { UpdateStylistLookDto } from "./dto/update-stylist-look.dto";
 @Injectable()
 export class AdminService {
   constructor(private readonly prisma: PrismaService) {}
+
+  private readonly orderStatusTransitions: Record<OrderStatus, OrderStatus[]> = {
+    NEW: ["CONFIRMED", "CANCELLED_NO_STOCK", "CANCELLED_BY_CLIENT", "CANCELLED_OTHER"],
+    CONFIRMED: ["ASSEMBLING", "CANCELLED_NO_STOCK", "CANCELLED_BY_CLIENT", "CANCELLED_OTHER"],
+    ASSEMBLING: [
+      "READY_FOR_PICKUP",
+      "SHIPPED",
+      "CANCELLED_NO_STOCK",
+      "CANCELLED_BY_CLIENT",
+      "CANCELLED_OTHER",
+    ],
+    READY_FOR_PICKUP: ["DELIVERED", "CANCELLED_BY_CLIENT", "CANCELLED_OTHER"],
+    SHIPPED: ["DELIVERED", "CANCELLED_OTHER"],
+    DELIVERED: [],
+    CANCELLED_NO_STOCK: [],
+    CANCELLED_BY_CLIENT: [],
+    CANCELLED_OTHER: [],
+  };
 
   listProducts() {
     return this.prisma.product.findMany({ orderBy: { createdAt: "desc" } });
@@ -133,6 +152,37 @@ export class AdminService {
     return this.prisma.order.findMany({
       include: { items: true, user: { select: { email: true } } },
       orderBy: { createdAt: "desc" },
+    });
+  }
+
+  async updateOrderStatus(orderId: string, dto: UpdateOrderStatusDto) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+    });
+    if (!order) throw new NotFoundException("Order not found");
+
+    const nextStatus = dto.status as OrderStatus;
+    if (order.status !== nextStatus) {
+      const allowedTransitions = this.orderStatusTransitions[order.status];
+      if (!allowedTransitions.includes(nextStatus)) {
+        throw new BadRequestException(
+          `Invalid status transition: ${order.status} -> ${nextStatus}`,
+        );
+      }
+    }
+
+    const isCancelledStatus = String(nextStatus).startsWith("CANCELLED");
+    if (isCancelledStatus && !dto.cancelReason?.trim()) {
+      throw new BadRequestException("Cancel reason is required for cancelled orders");
+    }
+
+    return this.prisma.order.update({
+      where: { id: orderId },
+      data: {
+        status: nextStatus,
+        cancelReason: isCancelledStatus ? dto.cancelReason?.trim() : null,
+      },
+      include: { items: true, user: { select: { email: true } } },
     });
   }
 }

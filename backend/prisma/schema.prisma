@@ -19,10 +19,14 @@ enum DeliveryType {
 
 enum OrderStatus {
   NEW
-  PAID
+  CONFIRMED
+  ASSEMBLING
+  READY_FOR_PICKUP
   SHIPPED
-  COMPLETED
-  CANCELLED
+  DELIVERED
+  CANCELLED_NO_STOCK
+  CANCELLED_BY_CLIENT
+  CANCELLED_OTHER
 }
 
 model User {
@@ -104,6 +108,7 @@ model Order {
   deliveryPrice  Decimal      @db.Decimal(10, 2)
   paymentMethod  String
   status         OrderStatus   @default(NEW)
+  cancelReason   String?
   totalAmount    Decimal      @db.Decimal(10, 2)
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
