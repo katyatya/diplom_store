@@ -39,6 +39,7 @@ export class CatalogService {
       data: {
         name: dto.name,
         description: dto.description,
+        composition: dto.composition,
         price: new Prisma.Decimal(dto.price),
         imageUrl: dto.imageUrl,
         category: dto.category ?? "Одежда",

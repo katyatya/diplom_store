@@ -5,12 +5,14 @@ import { useEffect, useState } from "react";
 import { addToCart, fetchWishlist, removeFromWishlist } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { useToast } from "@/components/ui/toast";
 
 type WishlistItem = Awaited<ReturnType<typeof fetchWishlist>>[number];
 
 export default function WishlistPage() {
   const [items, setItems] = useState<WishlistItem[]>([]);
   const [status, setStatus] = useState("");
+  const { showToast } = useToast();
 
   async function load() {
     try {
@@ -37,9 +39,10 @@ export default function WishlistPage() {
   async function onMoveToCart(productId: string) {
     try {
       await addToCart(productId, 1);
-      setStatus("Товар добавлен в корзину.");
+      showToast("Товар добавлен в корзину");
     } catch {
       setStatus("Не удалось добавить в корзину.");
+      showToast("Не удалось добавить в корзину.", "error");
     }
   }
 
@@ -57,7 +60,7 @@ export default function WishlistPage() {
             </p>
             <div className="flex flex-wrap gap-2">
               <Button asChild variant="secondary" size="sm">
-                <Link href={`/catalog/${item.product.id}`}>Карточка</Link>
+                <Link href={`/catalog/product/${item.product.slug || item.product.id}`}>Карточка</Link>
               </Button>
               <Button size="sm" onClick={() => void onMoveToCart(item.product.id)}>
                 В корзину

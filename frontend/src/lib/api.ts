@@ -10,8 +10,10 @@ export type AuthUser = {
 
 export type Product = {
   id: string;
+  slug: string;
   name: string;
   description: string | null;
+  composition: string | null;
   price: string;
   imageUrl: string;
   category: string;
@@ -249,8 +251,8 @@ export function fetchProducts(params?: { category?: string; isNew?: boolean }): 
   return request<Product[]>(`/catalog/products${suffix}`);
 }
 
-export function fetchProduct(productId: string): Promise<Product> {
-  return request<Product>(`/catalog/products/${productId}`);
+export function fetchProduct(productSlug: string): Promise<Product> {
+  return request<Product>(`/catalog/products/${productSlug}`);
 }
 
 export function fetchCategories(): Promise<string[]> {
@@ -398,6 +400,7 @@ export function adminFetchProducts(): Promise<Product[]> {
 export function adminCreateProduct(payload: {
   name: string;
   description?: string;
+  composition?: string;
   price: number;
   imageUrl: string;
   category?: string;

@@ -9,13 +9,15 @@ import {
   fetchBanners,
   fetchProducts,
 } from "@/lib/api";
+import { getPrimaryProductImage } from "@/lib/product-images";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useToast } from "@/components/ui/toast";
 
 export default function HomePage() {
   const [banners, setBanners] = useState<Banner[]>([]);
   const [newProducts, setNewProducts] = useState<Product[]>([]);
-  const [message, setMessage] = useState<string>("");
+  const { showToast } = useToast();
 
   useEffect(() => {
     void fetchBanners("home").then(setBanners).catch(() => setBanners([]));
@@ -24,14 +26,10 @@ export default function HomePage() {
 
   async function handleAddToCart(product: Product) {
     try {
-      const mode = await addProductToCart(product, 1);
-      setMessage(
-        mode === "guest"
-          ? "Товар добавлен в гостевую корзину."
-          : "Товар добавлен в корзину аккаунта.",
-      );
+      await addProductToCart(product, 1);
+      showToast("Товар добавлен в корзину");
     } catch {
-      setMessage("Не удалось добавить товар в корзину.");
+      showToast("Не удалось добавить товар в корзину.", "error");
     }
   }
 
@@ -41,8 +39,6 @@ export default function HomePage() {
       <p className="-mt-2 text-muted-foreground">
         Магазин одежды с конструктором образов, сохранением в "Мои образы", корзиной и админкой.
       </p>
-
-      {message ? <p className="text-sm text-emerald-600">{message}</p> : null}
 
       <section className="grid gap-3">
         <h2 className="text-2xl font-semibold">Баннеры главной</h2>
@@ -70,7 +66,7 @@ export default function HomePage() {
             <Card key={product.id}>
               <CardHeader className="p-3 pb-0">
                 <img
-                  src={product.imageUrl}
+                  src={getPrimaryProductImage(product)}
                   alt={product.name}
                   className="h-40 w-full rounded-md object-cover"
                 />
@@ -82,7 +78,7 @@ export default function HomePage() {
                 </p>
                 <div className="flex flex-wrap gap-2">
                   <Button asChild variant="secondary" size="sm">
-                    <Link href={`/catalog/${product.id}`}>Карточка</Link>
+                    <Link href={`/catalog/product/${product.slug || product.id}`}>Карточка</Link>
                   </Button>
                   <Button size="sm" onClick={() => void handleAddToCart(product)}>
                     В корзину

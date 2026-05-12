@@ -1,6 +1,7 @@
 "use client";
 
 import { Outfit, Product } from "@/lib/api";
+import { getPrimaryProductImage } from "@/lib/product-images";
 
 type OutfitPreviewProps = {
   items: Outfit["items"];
@@ -63,7 +64,7 @@ export function OutfitPreview({
         return (
           <img
             key={`${item.productId}-${index}`}
-            src={product.imageUrl}
+            src={getPrimaryProductImage(product)}
             alt={product.name}
             style={{
               position: "absolute",
