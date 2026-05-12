@@ -10,10 +10,8 @@ const navLinks: Array<{ href: string; label: string }> = [
   { href: "/catalog", label: "Каталог" },
   { href: "/outfit-builder", label: "Конструктор" },
   { href: "/outfits", label: "Готовые образы" },
-  { href: "/wishlist", label: "Wishlist" },
   { href: "/cart", label: "Корзина" },
-  { href: "/checkout", label: "Оформление" },
-  { href: "/admin", label: "Админка" },
+
 ];
 
 export function Header() {

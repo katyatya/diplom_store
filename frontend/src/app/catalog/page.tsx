@@ -1,23 +1,29 @@
-"use client";
-
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { fetchCategories } from "@/lib/api";
 import { categoryToSlug } from "@/lib/catalog-categories";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 
-export default function CatalogPage() {
-  const [categories, setCategories] = useState<string[]>([]);
-  const [status, setStatus] = useState("");
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
-  useEffect(() => {
-    void fetchCategories()
-      .then(setCategories)
-      .catch(() => {
-        setCategories([]);
-        setStatus("Не удалось загрузить категории.");
-      });
-  }, []);
+async function getCategories(): Promise<string[]> {
+  const response = await fetch(`${API_URL}/catalog/categories`, {
+    // Categories change rarely, so cache them for faster repeated opens.
+    next: { revalidate: 300 },
+  });
+  if (!response.ok) {
+    throw new Error("Failed to load categories");
+  }
+  return (await response.json()) as string[];
+}
+
+export default async function CatalogPage() {
+  let categories: string[] = [];
+  let status = "";
+
+  try {
+    categories = await getCategories();
+  } catch {
+    status = "Не удалось загрузить категории.";
+  }
 
   return (
     <section className="grid gap-4">

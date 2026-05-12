@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import React from "react";
 import "@/app/globals.css";
+import "react-dadata/dist/react-dadata.css";
 import { Header } from "@/components/layout/header";
 import { Providers } from "@/components/providers";
 
