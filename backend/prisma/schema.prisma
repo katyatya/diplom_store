@@ -45,6 +45,7 @@ model Product {
   id          String      @id @default(cuid())
   name        String
   description String?
+  composition String?
   price       Decimal     @db.Decimal(10, 2)
   imageUrl    String
   category    String      @default("Одежда")

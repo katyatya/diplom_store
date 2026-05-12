@@ -21,6 +21,7 @@ export class AdminService {
       data: {
         name: dto.name,
         description: dto.description,
+        composition: dto.composition,
         imageUrl: dto.imageUrl,
         price: new Prisma.Decimal(dto.price),
         category: dto.category ?? "Одежда",

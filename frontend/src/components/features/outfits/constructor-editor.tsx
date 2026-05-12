@@ -13,6 +13,7 @@ import {
   updateOutfit,
 } from "@/lib/api";
 import { requestAuthRequired } from "@/lib/auth-required";
+import { getPrimaryProductImage } from "@/lib/product-images";
 import { OutfitPreview } from "@/components/features/outfits/outfit-preview";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -400,7 +401,7 @@ export function ConstructorEditor() {
                       }}
                     >
                       <img
-                        src={product.imageUrl}
+                        src={getPrimaryProductImage(product)}
                         alt={product.name}
                         draggable={false}
                         onMouseDown={(event) => onCanvasItemMouseDown(event, item)}

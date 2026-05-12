@@ -1,4 +1,4 @@
-import { IsBoolean, IsNumber, IsOptional, IsString, IsUrl, Min } from "class-validator";
+import { IsBoolean, IsNumber, IsOptional, IsString, Min } from "class-validator";
 
 export class UpdateProductAdminDto {
   @IsOptional()
@@ -10,13 +10,16 @@ export class UpdateProductAdminDto {
   description?: string;
 
   @IsOptional()
+  @IsString()
+  composition?: string;
+
+  @IsOptional()
   @IsNumber()
   @Min(0)
   price?: number;
 
   @IsOptional()
   @IsString()
-  @IsUrl()
   imageUrl?: string;
 
   @IsOptional()

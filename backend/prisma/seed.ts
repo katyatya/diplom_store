@@ -35,32 +35,74 @@ async function main(): Promise<void> {
     {
       name: "Бежевый тренч",
       description: "Классический тренч oversize для межсезонья.",
+      composition: "63% хлопок, 37% полиэстер",
       price: 12990,
-      imageUrl: "https://images.unsplash.com/photo-1529139574466-a303027c1d8b",
+      imageUrl:
+        "https://loremflickr.com/1200/1600/fashion?lock=101, https://loremflickr.com/1200/1600/coat?lock=102, https://loremflickr.com/1200/1600/outerwear?lock=103",
+      category: "Верхняя одежда",
     },
     {
-      name: "Белая базовая футболка",
-      description: "Плотный хлопок, прямой крой.",
-      price: 2590,
-      imageUrl: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab",
+      name: "Платье миди с поясом",
+      description: "Легкое платье для повседневного и офисного образа.",
+      composition: "70% вискоза, 30% полиэстер",
+      price: 7590,
+      imageUrl:
+        "https://loremflickr.com/1200/1600/dress?lock=201, https://loremflickr.com/1200/1600/fashion?lock=202, https://loremflickr.com/1200/1600/women?lock=203",
+      category: "Платья",
     },
     {
       name: "Черные прямые джинсы",
       description: "Высокая посадка, деним средней плотности.",
+      composition: "98% хлопок, 2% эластан",
       price: 5490,
-      imageUrl: "https://images.unsplash.com/photo-1541099649105-f69ad21f3246",
+      imageUrl:
+        "https://loremflickr.com/1200/1600/jeans?lock=301, https://loremflickr.com/1200/1600/pants?lock=302, https://loremflickr.com/1200/1600/denim?lock=303",
+      category: "Брюки",
     },
     {
       name: "Кроссовки кожаные",
       description: "Минималистичный силуэт на каждый день.",
+      composition: "Верх: 100% кожа; подкладка: 100% текстиль; подошва: 100% резина",
       price: 8990,
-      imageUrl: "https://images.unsplash.com/photo-1542291026-7eec264c27ff",
+      imageUrl:
+        "https://loremflickr.com/1200/1600/sneakers?lock=401, https://loremflickr.com/1200/1600/shoes?lock=402, https://loremflickr.com/1200/1600/footwear?lock=403",
+      category: "Обувь",
     },
     {
-      name: "Свитер серый",
-      description: "Мягкая пряжа с добавлением шерсти.",
+      name: "Сумка-шоппер кожаная",
+      description: "Вместительная модель для города и поездок.",
+      composition: "Верх: 100% полиуретан; подкладка: 100% полиэстер",
       price: 6990,
-      imageUrl: "https://images.unsplash.com/photo-1434389677669-e08b4cac3105",
+      imageUrl:
+        "https://cache-limeshop.cdnvideo.ru/limeshop/aa/77007fceedce5065a48fc01661d18b80.jpeg?q=85&w=1536, https://cache-limeshop.cdnvideo.ru/limeshop/aa/8a294ac0e5fa547b8ee09b0a1cbae7ce.jpeg?q=85&w=1536",
+      category: "Сумки",
+    },
+    {
+      name: "Сумка-шоппер кожаная",
+      description: "Вместительная модель для города и поездок.",
+      composition: "Верх: 100% полиуретан; подкладка: 100% полиэстер",
+      price: 6990,
+      imageUrl:
+        "https://cache-limeshop.cdnvideo.ru/limeshop/aa/77007fceedce5065a48fc01661d18b80.jpeg?q=85&w=1536, https://cache-limeshop.cdnvideo.ru/limeshop/aa/8a294ac0e5fa547b8ee09b0a1cbae7ce.jpeg?q=85&w=1536",
+      category: "Сумки",
+    },
+    {
+      name: "Сумка-шоппер кожаная",
+      description: "Вместительная модель для города и поездок.",
+      composition: "Верх: 100% полиуретан; подкладка: 100% полиэстер",
+      price: 6990,
+      imageUrl:
+        "https://cache-limeshop.cdnvideo.ru/limeshop/aa/77007fceedce5065a48fc01661d18b80.jpeg?q=85&w=1536, https://cache-limeshop.cdnvideo.ru/limeshop/aa/8a294ac0e5fa547b8ee09b0a1cbae7ce.jpeg?q=85&w=1536",
+      category: "Сумки",
+    },
+    {
+      name: "Сумка-шоппер кожаная",
+      description: "Вместительная модель для города и поездок.",
+      composition: "Верх: 100% полиуретан; подкладка: 100% полиэстер",
+      price: 6990,
+      imageUrl:
+        "https://cache-limeshop.cdnvideo.ru/limeshop/aa/77007fceedce5065a48fc01661d18b80.jpeg?q=85&w=1536, https://cache-limeshop.cdnvideo.ru/limeshop/aa/8a294ac0e5fa547b8ee09b0a1cbae7ce.jpeg?q=85&w=1536",
+      category: "Сумки",
     },
   ];
 
@@ -70,8 +112,10 @@ async function main(): Promise<void> {
       data: {
         name: product.name,
         description: product.description,
+        composition: product.composition,
         price: new Prisma.Decimal(product.price),
         imageUrl: product.imageUrl,
+        category: product.category,
       },
     });
     productIds.push(savedProduct.id);

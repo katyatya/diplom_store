@@ -5,6 +5,7 @@ import type Konva from "konva";
 import { Image as KonvaImage, Layer, Rect, Stage, Transformer } from "react-konva";
 import useImage from "use-image";
 import { Product } from "@/lib/api";
+import { getPrimaryProductImage } from "@/lib/product-images";
 
 export type CanvasOutfitItem = {
   nodeId: string;
@@ -42,7 +43,7 @@ function OutfitCanvasNode({
   onSelect,
   onChange,
 }: OutfitCanvasNodeProps) {
-  const [image] = useImage(product.imageUrl, "anonymous");
+  const [image] = useImage(getPrimaryProductImage(product), "anonymous");
   const shapeRef = useRef<Konva.Image | null>(null);
   const transformerRef = useRef<Konva.Transformer | null>(null);
 

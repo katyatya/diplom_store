@@ -20,6 +20,7 @@ export default function AdminPage() {
   const [name, setName] = useState("");
   const [price, setPrice] = useState("0");
   const [imageUrl, setImageUrl] = useState("");
+  const [composition, setComposition] = useState("");
   const [category, setCategory] = useState("Одежда");
 
   async function load() {
@@ -46,11 +47,13 @@ export default function AdminPage() {
         name: name.trim(),
         price: Number(price),
         imageUrl: imageUrl.trim(),
+        composition: composition.trim() || undefined,
         category: category.trim(),
       });
       setName("");
       setPrice("0");
       setImageUrl("");
+      setComposition("");
       setStatus("Товар добавлен.");
       await load();
     } catch {
@@ -100,8 +103,13 @@ export default function AdminPage() {
             <Input
               value={imageUrl}
               onChange={(e) => setImageUrl(e.target.value)}
-              placeholder="URL картинки"
+              placeholder="URL фото (несколько через запятую)"
               required
+            />
+            <Input
+              value={composition}
+              onChange={(e) => setComposition(e.target.value)}
+              placeholder="Состав (например: 80% хлопок, 20% полиэстер)"
             />
             <Input
               value={category}
@@ -124,6 +132,9 @@ export default function AdminPage() {
               <strong>{product.name}</strong> - {Number(product.price).toLocaleString("ru-RU")} руб
               <p className="my-1 text-sm text-muted-foreground">
                 {product.category} / {product.isActive ? "Активен" : "Скрыт"}
+              </p>
+              <p className="my-1 text-sm text-muted-foreground">
+                Состав: {product.composition || "Не указан"}
               </p>
               <Button size="sm" variant="outline" onClick={() => void onDeleteProduct(product.id)}>
                 Удалить
