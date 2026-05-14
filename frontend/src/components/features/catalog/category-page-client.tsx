@@ -70,13 +70,12 @@ export function CategoryPageClient({ categorySlug }: CategoryPageClientProps) {
       ) : null}
       {status ? <p className="text-sm text-emerald-600">{status}</p> : null}
       <div className="mx-auto grid w-full max-w-4xl gap-x-6 gap-y-10 sm:grid-cols-2">
-        {products.map((product, index) => {
-          const isLargeCard = index % 3 === 2;
+        {products.map((product) => {
           const productIdentifier = product.slug || product.id;
           return (
             <article
               key={product.id}
-              className={`group cursor-pointer ${isLargeCard ? "sm:col-span-2" : ""}`}
+              className="group cursor-pointer"
               onClick={() => router.push(`/catalog/product/${productIdentifier}`)}
               onKeyDown={(event) => {
                 if (event.key === "Enter" || event.key === " ") {
@@ -91,9 +90,7 @@ export function CategoryPageClient({ categorySlug }: CategoryPageClientProps) {
                 <img
                   src={getPrimaryProductImage(product)}
                   alt={product.name}
-                  className={`w-full object-cover transition-transform duration-300 group-hover:scale-[1.02] ${
-                    isLargeCard ? "h-[560px]" : "h-[420px]"
-                  }`}
+                  className="h-[420px] w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
                 />
               </div>
               <div className="mt-3 grid gap-1">

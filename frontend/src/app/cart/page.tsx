@@ -28,10 +28,12 @@ export default function CartPage() {
   const [cart, setCart] = useState<Cart | null>(null);
   const [guestItems, setGuestItems] = useState<GuestCartItem[]>([]);
   const [authorized, setAuthorized] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [status, setStatus] = useState("");
   const { showToast } = useToast();
 
   async function load() {
+    setIsLoading(true);
     try {
       setCart(await fetchCart());
       setAuthorized(true);
@@ -43,7 +45,7 @@ export default function CartPage() {
   }
 
   useEffect(() => {
-    void load();
+    void load().finally(() => setIsLoading(false));
   }, []);
 
   const items = useMemo<DisplayCartItem[]>(() => {
@@ -105,56 +107,81 @@ export default function CartPage() {
           Вы в режиме гостя. После входа гостевая корзина будет перенесена в аккаунт.
         </p>
       ) : null}
-      {items.length === 0 ? <p className="text-sm text-muted-foreground">Корзина пуста.</p> : null}
-      {items.map((item) => (
-        <Card key={item.id}>
-          <CardContent className="grid gap-3 p-4">
-            <h3 className="font-medium">{item.product.name}</h3>
-            <p className="text-sm text-muted-foreground">
-              {Number(item.product.price).toLocaleString("ru-RU")} руб
-            </p>
-            <div className="flex flex-wrap items-center gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => void onChangeQty(item.id, item.quantity - 1, item.productId)}
-              >
-              -
-              </Button>
-              <span className="text-sm">Количество: {item.quantity}</span>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => void onChangeQty(item.id, item.quantity + 1, item.productId)}
-              >
-              +
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => void onRemove(item.id, item.productId)}
-              >
-                Удалить
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+      {isLoading ? (
+        <div className="grid gap-3">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-muted-foreground border-r-transparent" />
+            Загружаем товары...
+          </div>
+          {Array.from({ length: 3 }).map((_, index) => (
+            <Card key={index}>
+              <CardContent className="grid gap-3 p-4">
+                <div className="h-5 w-2/3 animate-pulse rounded bg-muted" />
+                <div className="h-4 w-28 animate-pulse rounded bg-muted" />
+                <div className="h-9 w-56 animate-pulse rounded bg-muted" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <>
+          {items.length === 0 ? <p className="text-sm text-muted-foreground">Корзина пуста.</p> : null}
+          {items.map((item) => (
+            <Card key={item.id}>
+              <CardContent className="grid gap-3 p-4">
+                <h3 className="font-medium">{item.product.name}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {Number(item.product.price).toLocaleString("ru-RU")} руб
+                </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => void onChangeQty(item.id, item.quantity - 1, item.productId)}
+                  >
+                  -
+                  </Button>
+                  <span className="text-sm">Количество: {item.quantity}</span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => void onChangeQty(item.id, item.quantity + 1, item.productId)}
+                  >
+                  +
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => void onRemove(item.id, item.productId)}
+                  >
+                    Удалить
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </>
+      )}
       <p>
         <strong>Итого: {total.toLocaleString("ru-RU")} руб</strong>
       </p>
-      {authorized ? (
-        <Button asChild className="w-fit">
-          <Link href="/checkout">Перейти к оформлению</Link>
-        </Button>
-      ) : (
-        <Button
-          className="w-fit"
-          onClick={() => requestAuthRequired(showToast, "checkout")}
-        >
-          Войти для оформления заказа
-        </Button>
-      )}
+      {items.length > 0 && !isLoading ? (
+        <div className="grid gap-2 rounded-lg border p-3 sm:max-w-[420px]">
+          <p className="text-sm text-muted-foreground">Готовы завершить покупку?</p>
+          {authorized ? (
+            <Button asChild className="w-full">
+              <Link href="/checkout?fromCart=1">Перейти к оформлению</Link>
+            </Button>
+          ) : (
+            <Button
+              className="w-full"
+              onClick={() => requestAuthRequired(showToast, "checkout")}
+            >
+              Перейти к оформлению
+            </Button>
+          )}
+        </div>
+      ) : null}
     </section>
   );
 }

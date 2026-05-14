@@ -1,5 +1,3 @@
-"use client";
-
 const CATEGORY_SLUG_OVERRIDES: Record<string, string> = {
   "верхняя одежда": "outerwear",
   платья: "dresses",

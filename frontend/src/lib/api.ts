@@ -76,6 +76,7 @@ export type Order = {
   deliveryPrice: string;
   paymentMethod: string;
   status: string;
+  cancelReason?: string | null;
   totalAmount: string;
   createdAt: string;
   items: Array<{
@@ -422,4 +423,18 @@ export function adminDeleteProduct(productId: string): Promise<{ success: true }
 
 export function adminFetchOrders(): Promise<Order[]> {
   return request<Order[]>("/admin/orders", undefined, true);
+}
+
+export function adminUpdateOrderStatus(
+  orderId: string,
+  payload: { status: string; cancelReason?: string },
+): Promise<Order> {
+  return request<Order>(
+    `/admin/orders/${orderId}/status`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    },
+    true,
+  );
 }

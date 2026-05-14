@@ -15,6 +15,7 @@ import { CreateProductDto } from "../catalog/dto/create-product.dto";
 import { AdminService } from "./admin.service";
 import { CreateBannerDto } from "./dto/create-banner.dto";
 import { CreateStylistLookDto } from "./dto/create-stylist-look.dto";
+import { UpdateOrderStatusDto } from "./dto/update-order-status.dto";
 import { UpdateBannerDto } from "./dto/update-banner.dto";
 import { UpdateProductAdminDto } from "./dto/update-product-admin.dto";
 import { UpdateStylistLookDto } from "./dto/update-stylist-look.dto";
@@ -88,5 +89,10 @@ export class AdminController {
   @Get("orders")
   listOrders() {
     return this.adminService.listOrders();
+  }
+
+  @Patch("orders/:id/status")
+  updateOrderStatus(@Param("id") id: string, @Body() dto: UpdateOrderStatusDto) {
+    return this.adminService.updateOrderStatus(id, dto);
   }
 }

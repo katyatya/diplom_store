@@ -7,7 +7,27 @@ import { CreateOrderDto } from "./dto/create-order.dto";
 export class CheckoutService {
   constructor(private readonly prisma: PrismaService) {}
 
+  private async generateNumericOrderId(): Promise<string> {
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const candidate = `${Date.now()}${Math.floor(Math.random() * 10000)
+        .toString()
+        .padStart(4, "0")}`;
+      const existing = await this.prisma.order.findUnique({
+        where: { id: candidate },
+        select: { id: true },
+      });
+      if (!existing) return candidate;
+    }
+    return `${Date.now()}${Math.floor(Math.random() * 100000000)
+      .toString()
+      .padStart(8, "0")}`;
+  }
+
   async createOrder(userId: string, dto: CreateOrderDto) {
+    if (dto.deliveryType === "PICKUP") {
+      dto.address = undefined;
+    }
+
     const cart = await this.prisma.cart.findUnique({
       where: { userId },
       include: {
@@ -27,8 +47,11 @@ export class CheckoutService {
     const deliveryPrice = dto.deliveryType === "CDEK" ? 370 : 0;
     const totalAmount = itemsTotal + deliveryPrice;
 
+    const numericOrderId = await this.generateNumericOrderId();
+
     const order = await this.prisma.order.create({
       data: {
+        id: numericOrderId,
         userId,
         customerName: dto.customerName,
         phone: dto.phone,

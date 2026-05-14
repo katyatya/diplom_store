@@ -4,6 +4,28 @@ import { useEffect, useState } from "react";
 import { AuthUser, Order, fetchMe, fetchMyOrders } from "@/lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 
+const ORDER_STATUS_LABELS: Record<string, string> = {
+  NEW: "Новый",
+  CONFIRMED: "Подтвержден",
+  ASSEMBLING: "Сборка",
+  READY_FOR_PICKUP: "Готов к выдаче",
+  SHIPPED: "Передан в доставку",
+  DELIVERED: "Выдан",
+  CANCELLED_NO_STOCK: "Отменен: нет в наличии",
+  CANCELLED_BY_CLIENT: "Отменен клиентом",
+  CANCELLED_OTHER: "Отменен (прочее)",
+};
+
+function getStatusBadgeClass(status: string): string {
+  if (status === "DELIVERED" || status === "READY_FOR_PICKUP") {
+    return "bg-emerald-100 text-emerald-700";
+  }
+  if (status.startsWith("CANCELLED")) {
+    return "bg-red-100 text-red-700";
+  }
+  return "bg-amber-100 text-amber-700";
+}
+
 export default function ProfilePage() {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isUserLoading, setIsUserLoading] = useState(true);
@@ -13,15 +35,14 @@ export default function ProfilePage() {
   useEffect(() => {
     void (async () => {
       try {
-        const currentUser = await fetchMe();
-        setUser(currentUser);
-
-        const myOrders = await fetchMyOrders();
-        setOrders(myOrders);
+        const [loadedUser, loadedOrders] = await Promise.all([fetchMe(), fetchMyOrders()]);
+        setUser(loadedUser);
+        setOrders(loadedOrders);
+        setStatus("");
       } catch {
         setUser(null);
         setOrders([]);
-        setStatus("Войдите в аккаунт, чтобы посмотреть историю заказов.");
+        setStatus("Не удалось загрузить профиль. Выполните вход.");
       } finally {
         setIsUserLoading(false);
       }
@@ -47,8 +68,18 @@ export default function ProfilePage() {
       {orders.map((order) => (
         <Card key={order.id}>
           <CardContent className="grid gap-1 p-4">
-            <h3 className="font-medium">Заказ {order.id.slice(0, 8)}</h3>
-            <p className="text-sm text-muted-foreground">Статус: {order.status}</p>
+            <h3 className="font-medium">Заказ {order.id}</h3>
+            <p className="text-sm text-muted-foreground">
+              Статус:{" "}
+              <span
+                className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${getStatusBadgeClass(order.status)}`}
+              >
+                {ORDER_STATUS_LABELS[order.status] ?? order.status}
+              </span>
+            </p>
+            {order.cancelReason ? (
+              <p className="text-sm text-muted-foreground">Причина отмены: {order.cancelReason}</p>
+            ) : null}
             <p className="text-sm text-muted-foreground">
             Доставка: {order.deliveryType === "PICKUP" ? "Самовывоз" : "CDEK"} /{" "}
             {Number(order.deliveryPrice).toLocaleString("ru-RU")} руб
