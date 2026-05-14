@@ -37,12 +37,12 @@ async function main(): Promise<void> {
 
   const productsData = [
     {
-      name: "Бежевый тренч",
+      name: "Шерстяная куртка-бомбер с пайетками",
       description: "Классический тренч oversize для межсезонья.",
       composition: "63% хлопок, 37% полиэстер",
       price: 12990,
       imageUrl:
-        "https://loremflickr.com/1200/1600/fashion?lock=101, https://loremflickr.com/1200/1600/coat?lock=102, https://loremflickr.com/1200/1600/outerwear?lock=103",
+        "https://cache-limeshop.cdnvideo.ru/limeshop/aa/512f9909cabd51fb90f9332d8523f2f1.jpeg?q=85&w=1000",
       category: "Верхняя одежда",
     },
     {
@@ -55,21 +55,30 @@ async function main(): Promise<void> {
       category: "Платья",
     },
     {
-      name: "Черные прямые джинсы",
+      name: "Белые брюки свободного кроя",
       description: "Высокая посадка, деним средней плотности.",
       composition: "98% хлопок, 2% эластан",
       price: 5490,
       imageUrl:
-        "https://loremflickr.com/1200/1600/jeans?lock=301, https://loremflickr.com/1200/1600/pants?lock=302, https://loremflickr.com/1200/1600/denim?lock=303",
+        "	https://cache-limeshop.cdnvideo.ru/limeshop/aa/8fd1e9b508e55c2a8b650bc38d6afe12.jpeg?q=85&w=1000",
       category: "Брюки",
     },
     {
-      name: "Кроссовки кожаные",
+      name: "Кожаные лоферы с тиснением под крокодила",
       description: "Минималистичный силуэт на каждый день.",
       composition: "Верх: 100% кожа; подкладка: 100% текстиль; подошва: 100% резина",
       price: 8990,
       imageUrl:
-        "https://loremflickr.com/1200/1600/sneakers?lock=401, https://loremflickr.com/1200/1600/shoes?lock=402, https://loremflickr.com/1200/1600/footwear?lock=403",
+        "https://cache-limeshop.cdnvideo.ru/limeshop/aa/c08a67f89eb25f84bdc1e1e228ffdf6b.jpeg?q=85&w=558",
+      category: "Обувь",
+    },
+    {
+      name: "Туфли коричневые с высоким каблуком",
+      description: "Минималистичный силуэт на каждый день.",
+      composition: "Верх: 100% кожа; подкладка: 100% текстиль; подошва: 100% резина",
+      price: 5990,
+      imageUrl:
+        "https://cache-limeshop.cdnvideo.ru/limeshop/aa/ce143621ba8956daa6d8a741a90eb3cb.jpeg?q=85&w=1044",
       category: "Обувь",
     },
     {

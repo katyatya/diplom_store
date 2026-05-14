@@ -421,8 +421,90 @@ export function adminDeleteProduct(productId: string): Promise<{ success: true }
   return request<{ success: true }>(`/admin/products/${productId}`, { method: "DELETE" }, true);
 }
 
+export function adminUpdateProduct(
+  productId: string,
+  payload: Partial<{
+    name: string;
+    description: string;
+    composition: string;
+    price: number;
+    imageUrl: string;
+    category: string;
+    isNew: boolean;
+    isActive: boolean;
+  }>,
+): Promise<Product> {
+  return request<Product>(
+    `/admin/products/${productId}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    },
+    true,
+  );
+}
+
 export function adminFetchOrders(): Promise<Order[]> {
   return request<Order[]>("/admin/orders", undefined, true);
+}
+
+export function adminFetchStylistLooks(): Promise<Outfit[]> {
+  return request<Outfit[]>("/admin/stylist-looks", undefined, true);
+}
+
+export function adminCreateStylistLook(payload: {
+  name: string;
+  description?: string;
+  stylistUserId: string;
+  items: Array<{
+    productId: string;
+    x: number;
+    y: number;
+    zIndex: number;
+    width?: number;
+    height?: number;
+    rotation?: number;
+  }>;
+}): Promise<Outfit> {
+  return request<Outfit>(
+    "/admin/stylist-looks",
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+    true,
+  );
+}
+
+export function adminUpdateStylistLook(
+  lookId: string,
+  payload: Partial<{
+    name: string;
+    description?: string;
+    stylistUserId: string;
+    items: Array<{
+      productId: string;
+      x: number;
+      y: number;
+      zIndex: number;
+      width?: number;
+      height?: number;
+      rotation?: number;
+    }>;
+  }>,
+): Promise<Outfit> {
+  return request<Outfit>(
+    `/admin/stylist-looks/${lookId}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    },
+    true,
+  );
+}
+
+export function adminDeleteStylistLook(lookId: string): Promise<{ success: true }> {
+  return request<{ success: true }>(`/admin/stylist-looks/${lookId}`, { method: "DELETE" }, true);
 }
 
 export function adminUpdateOrderStatus(

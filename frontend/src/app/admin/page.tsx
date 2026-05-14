@@ -8,11 +8,13 @@ import {
   adminDeleteProduct,
   adminFetchOrders,
   adminFetchProducts,
+  adminUpdateProduct,
   adminUpdateOrderStatus,
 } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { ConstructorEditor } from "@/components/features/outfits/constructor-editor";
 
 const ORDER_STATUS_LABELS: Record<string, string> = {
   NEW: "Новый",
@@ -37,6 +39,7 @@ function getStatusBadgeClass(status: string): string {
 }
 
 export default function AdminPage() {
+  const [activeSection, setActiveSection] = useState<"products" | "orders" | "stylistLooks">("products");
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [lastNewOrderEmails, setLastNewOrderEmails] = useState<string[]>([]);
@@ -48,6 +51,20 @@ export default function AdminPage() {
   const [imageUrl, setImageUrl] = useState("");
   const [composition, setComposition] = useState("");
   const [category, setCategory] = useState("Одежда");
+  const [editingProductId, setEditingProductId] = useState<string | null>(null);
+  const [productDrafts, setProductDrafts] = useState<
+    Record<
+      string,
+      {
+        name: string;
+        price: string;
+        imageUrl: string;
+        composition: string;
+        category: string;
+        isActive: boolean;
+      }
+    >
+  >({});
 
   const newOrders = useMemo(
     () => orders.filter((order) => order.status === "NEW"),
@@ -78,6 +95,22 @@ export default function AdminPage() {
       ]);
       setProducts(loadedProducts);
       setOrders(loadedOrders);
+      setProductDrafts((current) => {
+        const next = { ...current };
+        for (const product of loadedProducts) {
+          if (!next[product.id]) {
+            next[product.id] = {
+              name: product.name,
+              price: product.price,
+              imageUrl: product.imageUrl,
+              composition: product.composition ?? "",
+              category: product.category,
+              isActive: product.isActive,
+            };
+          }
+        }
+        return next;
+      });
       setStatusDrafts((current) => {
         const next = { ...current };
         for (const order of loadedOrders) {
@@ -182,6 +215,26 @@ export default function AdminPage() {
     }
   }
 
+  async function onSaveProduct(productId: string) {
+    const draft = productDrafts[productId];
+    if (!draft) return;
+    try {
+      await adminUpdateProduct(productId, {
+        name: draft.name.trim(),
+        price: Number(draft.price),
+        imageUrl: draft.imageUrl.trim(),
+        composition: draft.composition.trim() || undefined,
+        category: draft.category.trim(),
+        isActive: draft.isActive,
+      });
+      setEditingProductId(null);
+      setStatus("Товар обновлен.");
+      await load();
+    } catch {
+      setStatus("Не удалось обновить товар.");
+    }
+  }
+
   function renderOrderCard(order: Order) {
     return (
       <article key={order.id} className="rounded-lg border p-3">
@@ -253,12 +306,50 @@ export default function AdminPage() {
   return (
     <section className="grid gap-4">
       <h1 className="text-3xl font-semibold tracking-tight">Админка</h1>
-      <p className="text-sm text-muted-foreground">
-        Управление товарами, заказами, баннерами и образами стилистов через backend
-        `/admin/*`.
-      </p>
+     
       {status ? <p className="text-sm text-muted-foreground">{status}</p> : null}
 
+      <div className="grid gap-3 sm:grid-cols-3">
+        <button
+          type="button"
+          onClick={() => setActiveSection("products")}
+          className={`rounded-lg border p-4 text-left transition-colors ${
+            activeSection === "products" ? "border-foreground border-green-500" : "hover:bg-accent/20"
+          }`}
+        >
+          <p className="text-lg font-semibold">Товары</p>
+          <p className="text-sm text-muted-foreground">
+            Добавление, редактирование и удаление существующих товаров
+          </p>
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveSection("orders")}
+          className={`rounded-lg border p-4 text-left transition-colors ${
+            activeSection === "orders" ? "border-foreground border-green-500" : "hover:bg-accent/20"
+          }`}
+        >
+          <p className="text-lg font-semibold">Заказы</p>
+          <p className="text-sm text-muted-foreground">
+            Новые, в работе и архивные заказы + смена статуса
+          </p>
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveSection("stylistLooks")}
+          className={`rounded-lg border p-4 text-left transition-colors ${
+            activeSection === "stylistLooks" ? "border-foreground border-green-500" : "hover:bg-accent/20"
+          }`}
+        >
+          <p className="text-lg font-semibold">Образы стилиста</p>
+          <p className="text-sm text-muted-foreground">
+            Конструктор и управление образами, которые публикуются как стилистские
+          </p>
+        </button>
+      </div>
+
+      {activeSection === "products" ? (
+        <>
       <Card>
         <CardHeader>
           <CardTitle>Добавить товар</CardTitle>
@@ -308,21 +399,128 @@ export default function AdminPage() {
         <CardContent className="grid gap-2">
           {products.map((product) => (
             <article key={product.id} className="rounded-lg border p-3">
-              <strong>{product.name}</strong> - {Number(product.price).toLocaleString("ru-RU")} руб
-              <p className="my-1 text-sm text-muted-foreground">
-                {product.category} / {product.isActive ? "Активен" : "Скрыт"}
-              </p>
-              <p className="my-1 text-sm text-muted-foreground">
-                Состав: {product.composition || "Не указан"}
-              </p>
-              <Button size="sm" variant="outline" onClick={() => void onDeleteProduct(product.id)}>
-                Удалить
-              </Button>
+              {editingProductId === product.id ? (
+                <div className="grid gap-2">
+                  <Input
+                    value={productDrafts[product.id]?.name ?? ""}
+                    onChange={(event) =>
+                      setProductDrafts((current) => ({
+                        ...current,
+                        [product.id]: {
+                          ...current[product.id],
+                          name: event.target.value,
+                        },
+                      }))
+                    }
+                    placeholder="Название"
+                  />
+                  <Input
+                    value={productDrafts[product.id]?.price ?? ""}
+                    type="number"
+                    min={0}
+                    onChange={(event) =>
+                      setProductDrafts((current) => ({
+                        ...current,
+                        [product.id]: {
+                          ...current[product.id],
+                          price: event.target.value,
+                        },
+                      }))
+                    }
+                    placeholder="Цена"
+                  />
+                  <Input
+                    value={productDrafts[product.id]?.imageUrl ?? ""}
+                    onChange={(event) =>
+                      setProductDrafts((current) => ({
+                        ...current,
+                        [product.id]: {
+                          ...current[product.id],
+                          imageUrl: event.target.value,
+                        },
+                      }))
+                    }
+                    placeholder="URL фото"
+                  />
+                  <Input
+                    value={productDrafts[product.id]?.composition ?? ""}
+                    onChange={(event) =>
+                      setProductDrafts((current) => ({
+                        ...current,
+                        [product.id]: {
+                          ...current[product.id],
+                          composition: event.target.value,
+                        },
+                      }))
+                    }
+                    placeholder="Состав"
+                  />
+                  <Input
+                    value={productDrafts[product.id]?.category ?? ""}
+                    onChange={(event) =>
+                      setProductDrafts((current) => ({
+                        ...current,
+                        [product.id]: {
+                          ...current[product.id],
+                          category: event.target.value,
+                        },
+                      }))
+                    }
+                    placeholder="Категория"
+                  />
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={productDrafts[product.id]?.isActive ?? product.isActive}
+                      onChange={(event) =>
+                        setProductDrafts((current) => ({
+                          ...current,
+                          [product.id]: {
+                            ...current[product.id],
+                            isActive: event.target.checked,
+                          },
+                        }))
+                      }
+                    />
+                    Активен
+                  </label>
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={() => void onSaveProduct(product.id)}>
+                      Сохранить
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => setEditingProductId(null)}>
+                      Отмена
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <strong>{product.name}</strong> - {Number(product.price).toLocaleString("ru-RU")} руб
+                  <p className="my-1 text-sm text-muted-foreground">
+                    {product.category} / {product.isActive ? "Активен" : "Скрыт"}
+                  </p>
+                  <p className="my-1 text-sm text-muted-foreground">
+                    Состав: {product.composition || "Не указан"}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button size="sm" variant="secondary" onClick={() => setEditingProductId(product.id)}>
+                      Редактировать
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => void onDeleteProduct(product.id)}>
+                      Удалить
+                    </Button>
+                  </div>
+                </>
+              )}
             </article>
           ))}
         </CardContent>
       </Card>
+        </>
+      ) : null}
 
+      {activeSection === "orders" ? (
+        <>
       <Card className="border-emerald-200">
         <CardHeader>
           <CardTitle>Новые заказы (приоритет)</CardTitle>
@@ -367,6 +565,9 @@ export default function AdminPage() {
           )}
         </CardContent>
       </Card>
+        </>
+      ) : null}
+      {activeSection === "stylistLooks" ? <ConstructorEditor mode="adminStylist" /> : null}
     </section>
   );
 }

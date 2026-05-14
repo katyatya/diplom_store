@@ -12,6 +12,10 @@ import {
   Outfit,
   Product,
   addOutfitToCart,
+  adminCreateStylistLook,
+  adminDeleteStylistLook,
+  adminFetchStylistLooks,
+  adminUpdateStylistLook,
   createOutfit,
   deleteOutfit,
   fetchCategories,
@@ -47,6 +51,7 @@ type CanvasOutfitItem = {
 
 type ConstructorEditorProps = {
   initialProductId?: string;
+  mode?: "user" | "adminStylist";
 };
 
 function normalizeOutfitItems(items: Outfit["items"]): CanvasOutfitItem[] {
@@ -74,11 +79,12 @@ function toApiPayload(items: CanvasOutfitItem[]): OutfitPlacement[] {
   }));
 }
 
-export function ConstructorEditor({ initialProductId }: ConstructorEditorProps) {
+export function ConstructorEditor({ initialProductId, mode = "user" }: ConstructorEditorProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
   const [myOutfits, setMyOutfits] = useState<Outfit[]>([]);
+  const [stylistUserId, setStylistUserId] = useState<string>("");
   const [canvasItems, setCanvasItems] = useState<CanvasOutfitItem[]>([]);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [editingOutfitId, setEditingOutfitId] = useState<string | null>(null);
@@ -106,9 +112,24 @@ export function ConstructorEditor({ initialProductId }: ConstructorEditorProps) 
     void fetchProducts().then(setProducts).catch(() => setProducts([]));
     void fetchCategories().then(setCategories).catch(() => setCategories([]));
     void loadOutfits();
-  }, []);
+    if (mode === "adminStylist") {
+      void fetchMe()
+        .then((me) => setStylistUserId(me.sub))
+        .catch(() => setStylistUserId(""));
+    }
+  }, [mode]);
 
   async function loadOutfits() {
+    if (mode === "adminStylist") {
+      try {
+        const data = await adminFetchStylistLooks();
+        setMyOutfits(data);
+      } catch {
+        setStatus("Не удалось загрузить образы стилиста.");
+      }
+      return;
+    }
+
     try {
       const data = await fetchMyOutfits();
       setMyOutfits(data);
@@ -341,12 +362,14 @@ export function ConstructorEditor({ initialProductId }: ConstructorEditorProps) 
   }
 
   async function onSaveOutfit() {
-    try {
-      await fetchMe();
-    } catch {
-      setStatus("Войдите в аккаунт, чтобы работать с Моими образами.");
-      requestAuthRequired(showToast, "outfitSave");
-      return;
+    if (mode === "user") {
+      try {
+        await fetchMe();
+      } catch {
+        setStatus("Войдите в аккаунт, чтобы работать с Моими образами.");
+        requestAuthRequired(showToast, "outfitSave");
+        return;
+      }
     }
 
     if (!name.trim() || canvasItems.length === 0) {
@@ -361,25 +384,56 @@ export function ConstructorEditor({ initialProductId }: ConstructorEditorProps) 
     };
 
     try {
-      if (editingOutfitId) {
-        await updateOutfit(editingOutfitId, payload);
-        setStatus("Образ обновлен.");
+      if (mode === "adminStylist") {
+        if (!stylistUserId) {
+          setStatus("Не удалось определить admin-пользователя.");
+          return;
+        }
+        if (editingOutfitId) {
+          await adminUpdateStylistLook(editingOutfitId, {
+            ...payload,
+            stylistUserId,
+          });
+          setStatus("Образ стилиста обновлен.");
+        } else {
+          await adminCreateStylistLook({
+            ...payload,
+            stylistUserId,
+          });
+          setStatus("Образ стилиста сохранен.");
+        }
       } else {
-        await createOutfit(payload);
-        setStatus("Образ сохранен в Моих образах.");
+        if (editingOutfitId) {
+          await updateOutfit(editingOutfitId, payload);
+          setStatus("Образ обновлен.");
+        } else {
+          await createOutfit(payload);
+          setStatus("Образ сохранен в Моих образах.");
+        }
       }
       resetDraft();
       await loadOutfits();
     } catch {
-      setStatus("Не удалось сохранить образ. Проверьте авторизацию.");
-      requestAuthRequired(showToast, "outfitSave");
+      setStatus(
+        mode === "adminStylist"
+          ? "Не удалось сохранить образ стилиста."
+          : "Не удалось сохранить образ. Проверьте авторизацию.",
+      );
+      if (mode === "user") {
+        requestAuthRequired(showToast, "outfitSave");
+      }
     }
   }
 
   async function onDeleteOutfit(outfitId: string) {
     try {
-      await deleteOutfit(outfitId);
-      setStatus("Образ удален.");
+      if (mode === "adminStylist") {
+        await adminDeleteStylistLook(outfitId);
+        setStatus("Образ стилиста удален.");
+      } else {
+        await deleteOutfit(outfitId);
+        setStatus("Образ удален.");
+      }
       if (editingOutfitId === outfitId) {
         resetDraft();
       }
@@ -400,10 +454,13 @@ export function ConstructorEditor({ initialProductId }: ConstructorEditorProps) 
 
   return (
     <section className="grid gap-4">
-      <h1 className="text-3xl font-semibold tracking-tight">Конструктор образов</h1>
+      <h1 className="text-3xl font-semibold tracking-tight">
+        {mode === "adminStylist" ? "Конструктор образов стилиста" : "Конструктор образов"}
+      </h1>
       <p className="text-sm text-muted-foreground">
-        Добавляйте товары из каталога на полотно, меняйте их размер и позицию, затем
-        сохраняйте образ в "Мои образы".
+        {mode === "adminStylist"
+          ? "Собирайте образы в конструкторе и сохраняйте их как образы от стилиста."
+          : 'Добавляйте товары из каталога на полотно, меняйте их размер и позицию, затем сохраняйте образ в "Мои образы".'}
       </p>
 
       <Card>
@@ -609,7 +666,7 @@ export function ConstructorEditor({ initialProductId }: ConstructorEditorProps) 
               onClick={() => void onSaveOutfit()}
               className="bg-[#bcefea] font-semibold text-[#0f4f4b] shadow-sm hover:bg-pink-300"
             >
-              Сохранить в "Мои образы"
+              {mode === "adminStylist" ? "Сохранить образ стилиста" : 'Сохранить в "Мои образы"'}
             </Button>
             <Button variant="outline" onClick={resetDraft}>
               Очистить полотно
@@ -620,11 +677,15 @@ export function ConstructorEditor({ initialProductId }: ConstructorEditorProps) 
 
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle>Мои образы</CardTitle>
+          <CardTitle>{mode === "adminStylist" ? "Образы стилиста" : "Мои образы"}</CardTitle>
         </CardHeader>
         <CardContent>
           {myOutfits.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Пока нет сохраненных образов.</p>
+            <p className="text-sm text-muted-foreground">
+              {mode === "adminStylist"
+                ? "Пока нет сохраненных образов стилиста."
+                : "Пока нет сохраненных образов."}
+            </p>
           ) : null}
           <div className="grid gap-3">
             {myOutfits.map((outfit) => (
@@ -644,9 +705,11 @@ export function ConstructorEditor({ initialProductId }: ConstructorEditorProps) 
                     <Button size="sm" variant="ghost" onClick={() => void onDeleteOutfit(outfit.id)}>
                       Удалить
                     </Button>
-                    <Button size="sm" onClick={() => void onAddOutfitToCart(outfit.id)}>
-                      Добавить в корзину
-                    </Button>
+                    {mode === "user" ? (
+                      <Button size="sm" onClick={() => void onAddOutfitToCart(outfit.id)}>
+                        Добавить в корзину
+                      </Button>
+                    ) : null}
                   </div>
                 </div>
               </article>

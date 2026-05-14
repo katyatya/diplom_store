@@ -13,6 +13,18 @@ class OutfitItemDto {
 
   @IsNumber()
   zIndex!: number;
+
+  @IsOptional()
+  @IsNumber()
+  width?: number;
+
+  @IsOptional()
+  @IsNumber()
+  height?: number;
+
+  @IsOptional()
+  @IsNumber()
+  rotation?: number;
 }
 
 export class CreateStylistLookDto {
