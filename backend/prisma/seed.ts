@@ -4,9 +4,13 @@ import * as bcrypt from "bcrypt";
 const prisma = new PrismaClient();
 
 async function main(): Promise<void> {
+  await prisma.orderItem.deleteMany();
+  await prisma.order.deleteMany();
+  await prisma.wishlistItem.deleteMany();
   await prisma.cartItem.deleteMany();
   await prisma.cart.deleteMany();
   await prisma.outfit.deleteMany();
+  await prisma.banner.deleteMany();
   await prisma.product.deleteMany();
   await prisma.user.deleteMany();
 
@@ -69,39 +73,40 @@ async function main(): Promise<void> {
       category: "Обувь",
     },
     {
-      name: "Сумка-шоппер кожаная",
+      name: "Плетеная из пластин и бусин сумка",
+      description: "Плетеная сумка прямоугольной формы выполнена из небольших пластиковых пластин и бусин серебристого цвета. Плечевая ручка. Магнитная застежка. Размер: 19 х 2,5 х 11,5 см (длина х ширина х высота).",
+      composition: "Верх: 100% полиуретан; подкладка: 100% полиэстер",
+      price: 5990,
+      imageUrl:
+        "	https://cache-limeshop.cdnvideo.ru/limeshop/aa/2a23763c77fe59ee9d66738ef1bc332c.jpeg?q=85&w=1000,	https://cache-limeshop.cdnvideo.ru/limeshop/aa/77c4576df255571c9a637f5476b3a7ea.jpeg?q=85&w=1000,https://cache-limeshop.cdnvideo.ru/limeshop/aa/e771689ff287591894413368b1bb2f00.jpeg?q=85&w=1000",
+      category: "Сумки",
+    },
+  
+    {
+      name: "Плетеная сумка",
       description: "Вместительная модель для города и поездок.",
       composition: "Верх: 100% полиуретан; подкладка: 100% полиэстер",
       price: 6990,
       imageUrl:
-        "https://cache-limeshop.cdnvideo.ru/limeshop/aa/77007fceedce5065a48fc01661d18b80.jpeg?q=85&w=1536, https://cache-limeshop.cdnvideo.ru/limeshop/aa/8a294ac0e5fa547b8ee09b0a1cbae7ce.jpeg?q=85&w=1536",
+        "https://cache-limeshop.cdnvideo.ru/limeshop/aa/af4b838090715b6bb8567ac2a549a088.jpeg?q=85&w=558,	https://cache-limeshop.cdnvideo.ru/limeshop/aa/30f66807ea7d5c1e810e4023aa4c7576.jpeg?q=85&w=558",
       category: "Сумки",
     },
     {
-      name: "Сумка-шоппер кожаная",
+      name: "Плетеная сумка",
       description: "Вместительная модель для города и поездок.",
       composition: "Верх: 100% полиуретан; подкладка: 100% полиэстер",
       price: 6990,
       imageUrl:
-        "https://cache-limeshop.cdnvideo.ru/limeshop/aa/77007fceedce5065a48fc01661d18b80.jpeg?q=85&w=1536, https://cache-limeshop.cdnvideo.ru/limeshop/aa/8a294ac0e5fa547b8ee09b0a1cbae7ce.jpeg?q=85&w=1536",
+        "https://cache-limeshop.cdnvideo.ru/limeshop/aa/0d9692dad7dd591db2fb0642986db2c0.jpeg?q=85&w=558,https://cache-limeshop.cdnvideo.ru/limeshop/aa/fe31c606cb6054dea114ffe281d002ef.jpeg?q=85&w=558",
       category: "Сумки",
     },
     {
-      name: "Сумка-шоппер кожаная",
+      name: "Плетеная сумка из рафии",
       description: "Вместительная модель для города и поездок.",
-      composition: "Верх: 100% полиуретан; подкладка: 100% полиэстер",
+      composition: "Вместительная сумка сплетена из легкой и при этом прочной искусственной рафии. Контрастная отделка широкими полосами. Пара плевых ручек из материала под гладкую кожу. Размер: 41 х 11 х 51 см (длина х ширина х высота).",
       price: 6990,
       imageUrl:
-        "https://cache-limeshop.cdnvideo.ru/limeshop/aa/77007fceedce5065a48fc01661d18b80.jpeg?q=85&w=1536, https://cache-limeshop.cdnvideo.ru/limeshop/aa/8a294ac0e5fa547b8ee09b0a1cbae7ce.jpeg?q=85&w=1536",
-      category: "Сумки",
-    },
-    {
-      name: "Сумка-шоппер кожаная",
-      description: "Вместительная модель для города и поездок.",
-      composition: "Верх: 100% полиуретан; подкладка: 100% полиэстер",
-      price: 6990,
-      imageUrl:
-        "https://cache-limeshop.cdnvideo.ru/limeshop/aa/77007fceedce5065a48fc01661d18b80.jpeg?q=85&w=1536, https://cache-limeshop.cdnvideo.ru/limeshop/aa/8a294ac0e5fa547b8ee09b0a1cbae7ce.jpeg?q=85&w=1536",
+        "	https://cache-limeshop.cdnvideo.ru/limeshop/aa/a96c280f88c155c3a63cf7570ba83ac9.jpeg?q=85&w=558,https://cache-limeshop.cdnvideo.ru/limeshop/aa/289266b218395f739e6ecbeb4defb5d1.jpeg?q=85&w=558,	https://cache-limeshop.cdnvideo.ru/limeshop/aa/77007fceedce5065a48fc01661d18b80.jpeg?q=85&w=558",
       category: "Сумки",
     },
   ];
