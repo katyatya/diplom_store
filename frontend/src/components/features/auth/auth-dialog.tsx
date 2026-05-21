@@ -22,7 +22,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/toast";
-import { AUTH_DIALOG_OPEN_EVENT } from "@/lib/auth-required";
+import { AUTH_DIALOG_OPEN_EVENT, notifyAuthStateChanged } from "@/lib/auth-required";
+import { useRouter } from "next/navigation";
 
 type AuthMode = "login" | "register";
 
@@ -33,6 +34,7 @@ type AuthDialogProps = {
 };
 
 export function AuthDialog({ user, onUserChange, iconOnly }: AuthDialogProps) {
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [mode, setMode] = useState<AuthMode>("login");
   const [name, setName] = useState("");
@@ -82,6 +84,8 @@ export function AuthDialog({ user, onUserChange, iconOnly }: AuthDialogProps) {
 
       await mergeGuestCartToServer();
       onUserChange(payload.user);
+      notifyAuthStateChanged();
+      router.refresh();
       showToast(
         mode === "login"
           ? "Вы успешно вошли в аккаунт."
@@ -103,6 +107,8 @@ export function AuthDialog({ user, onUserChange, iconOnly }: AuthDialogProps) {
   async function onLogout() {
     await logout().catch(() => undefined);
     onUserChange(null);
+    notifyAuthStateChanged();
+    router.refresh();
     showToast("Вы вышли из аккаунта.");
     setIsOpen(false);
   }

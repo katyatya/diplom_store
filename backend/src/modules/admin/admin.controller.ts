@@ -14,9 +14,11 @@ import { RolesGuard } from "../../common/guards/roles.guard";
 import { CreateProductDto } from "../catalog/dto/create-product.dto";
 import { AdminService } from "./admin.service";
 import { CreateBannerDto } from "./dto/create-banner.dto";
+import { CreateCollectionDto } from "./dto/create-collection.dto";
 import { CreateStylistLookDto } from "./dto/create-stylist-look.dto";
 import { UpdateOrderStatusDto } from "./dto/update-order-status.dto";
 import { UpdateBannerDto } from "./dto/update-banner.dto";
+import { UpdateCollectionProductsDto } from "./dto/update-collection-products.dto";
 import { UpdateProductAdminDto } from "./dto/update-product-admin.dto";
 import { UpdateStylistLookDto } from "./dto/update-stylist-look.dto";
 
@@ -49,6 +51,24 @@ export class AdminController {
   @Get("banners")
   listBanners() {
     return this.adminService.listBanners();
+  }
+
+  @Get("collections")
+  listCollections() {
+    return this.adminService.listCollections();
+  }
+
+  @Post("collections")
+  createCollection(@Body() dto: CreateCollectionDto) {
+    return this.adminService.createCollection(dto);
+  }
+
+  @Patch("collections/:id/products")
+  updateCollectionProducts(
+    @Param("id") id: string,
+    @Body() dto: UpdateCollectionProductsDto,
+  ) {
+    return this.adminService.updateCollectionProducts(id, dto.productIds);
   }
 
   @Post("banners")

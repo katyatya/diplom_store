@@ -69,6 +69,14 @@ export function Header() {
               {link.label}
             </Link>
           ))}
+          {user?.role === "ADMIN" ? (
+            <Link
+              href="/admin"
+              className="relative text-xs uppercase tracking-[0.15em] text-muted-foreground transition-colors hover:text-foreground after:absolute after:-bottom-0.5 after:left-0 after:h-px after:w-0 after:bg-foreground after:transition-all hover:after:w-full"
+            >
+              Админка
+            </Link>
+          ) : null}
         </nav>
 
         {/* Right actions */}
@@ -164,6 +172,15 @@ export function Header() {
                 {link.label}
               </Link>
             ))}
+            {user?.role === "ADMIN" ? (
+              <Link
+                href="/admin"
+                className="border-b py-3 text-sm uppercase tracking-[0.15em] text-muted-foreground last:border-0 hover:text-foreground"
+                onClick={() => setMenuOpen(false)}
+              >
+                Админка
+              </Link>
+            ) : null}
           </nav>
         </div>
       ) : null}

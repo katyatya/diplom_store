@@ -12,7 +12,7 @@ import {
   updateCartItem,
   updateGuestCartItem,
 } from "@/lib/api";
-import { requestAuthRequired } from "@/lib/auth-required";
+import { AUTH_STATE_CHANGED_EVENT, requestAuthRequired } from "@/lib/auth-required";
 import { Button } from "@/components/ui/button";
 import { getPrimaryProductImage } from "@/lib/product-images";
 import { useToast } from "@/components/ui/toast";
@@ -49,6 +49,15 @@ export default function CartPage() {
 
   useEffect(() => {
     void load().finally(() => setIsLoading(false));
+
+    function onAuthChanged() {
+      void load().finally(() => setIsLoading(false));
+    }
+
+    window.addEventListener(AUTH_STATE_CHANGED_EVENT, onAuthChanged);
+    return () => {
+      window.removeEventListener(AUTH_STATE_CHANGED_EVENT, onAuthChanged);
+    };
   }, []);
 
   const items = useMemo<DisplayCartItem[]>(() => {
