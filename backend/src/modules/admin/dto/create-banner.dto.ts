@@ -14,10 +14,6 @@ export class CreateBannerDto {
 
   @IsOptional()
   @IsString()
-  section?: string;
-
-  @IsOptional()
-  @IsString()
   collectionId?: string;
 
   @IsOptional()

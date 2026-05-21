@@ -80,6 +80,16 @@ export type Banner = {
   isActive: boolean;
 };
 
+export type Collection = {
+  id: string;
+  title: string;
+  slug: string;
+  isActive: boolean;
+  products?: Array<{
+    productId: string;
+  }>;
+};
+
 export type Order = {
   id: string;
   customerName: string;
@@ -472,6 +482,64 @@ export function adminUpdateProduct(
 
 export function adminFetchOrders(): Promise<Order[]> {
   return request<Order[]>("/admin/orders", undefined, true);
+}
+
+export function adminFetchBanners(): Promise<Banner[]> {
+  return request<Banner[]>("/admin/banners", undefined, true);
+}
+
+export function adminCreateBanner(payload: {
+  title: string;
+  subtitle?: string;
+  imageUrl: string;
+  collectionId?: string;
+  isActive?: boolean;
+}): Promise<Banner> {
+  return request<Banner>(
+    "/admin/banners",
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+    true,
+  );
+}
+
+export function adminDeleteBanner(bannerId: string): Promise<{ success: true }> {
+  return request<{ success: true }>(`/admin/banners/${bannerId}`, { method: "DELETE" }, true);
+}
+
+export function adminFetchCollections(): Promise<Collection[]> {
+  return request<Collection[]>("/admin/collections", undefined, true);
+}
+
+export function adminCreateCollection(payload: {
+  title: string;
+  slug?: string;
+  isActive?: boolean;
+}): Promise<Collection> {
+  return request<Collection>(
+    "/admin/collections",
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+    true,
+  );
+}
+
+export function adminUpdateCollectionProducts(
+  collectionId: string,
+  productIds: string[],
+): Promise<Collection> {
+  return request<Collection>(
+    `/admin/collections/${collectionId}/products`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ productIds }),
+    },
+    true,
+  );
 }
 
 export function adminFetchStylistLooks(): Promise<Outfit[]> {
