@@ -19,8 +19,9 @@ export class CatalogController {
   listProducts(
     @Query("category") category?: string,
     @Query("isNew") isNew?: string,
+    @Query("collectionSlug") collectionSlug?: string,
   ) {
-    return this.catalogService.listProducts({ category, isNew });
+    return this.catalogService.listProducts({ category, isNew, collectionSlug });
   }
 
   @Get("products/:id")

@@ -47,19 +47,39 @@ export default function HomePage() {
 
       <section className="grid gap-3">
         <h2 className="text-2xl font-semibold">Баннеры главной</h2>
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3">
           {banners.map((banner) => (
-            <Card key={banner.id} className="overflow-hidden">
-              <img
-                src={banner.imageUrl}
-                alt={banner.title}
-                className="h-44 w-full object-cover"
-              />
-              <CardContent className="p-4">
-                <p className="font-medium">{banner.title}</p>
-                <p className="text-sm text-muted-foreground">{banner.subtitle}</p>
-              </CardContent>
-            </Card>
+            <Link
+              key={banner.id}
+              href={
+                banner.collection?.slug
+                  ? `/catalog/collection/${encodeURIComponent(banner.collection.slug)}`
+                  : "/catalog"
+              }
+              className="group block"
+            >
+              <Card className="overflow-hidden">
+                <div className="relative">
+                  <img
+                    src={banner.imageUrl}
+                    alt={banner.title}
+                    className="h-[420px] w-full object-cover transition-transform duration-300 group-hover:scale-[1.01]"
+                  />
+                  <div className="absolute inset-0 bg-black/30" />
+                  <CardContent className="absolute inset-x-0 bottom-0 p-6 text-white">
+                    <p className="text-3xl font-semibold sm:text-4xl">{banner.title}</p>
+                    {banner.subtitle ? (
+                      <p className="mt-2 text-base text-white/90 sm:text-lg">{banner.subtitle}</p>
+                    ) : null}
+                    {banner.collection?.title ? (
+                      <p className="mt-3 text-sm uppercase tracking-[0.2em] text-white/80">
+                        Коллекция: {banner.collection.title}
+                      </p>
+                    ) : null}
+                  </CardContent>
+                </div>
+              </Card>
+            </Link>
           ))}
         </div>
       </section>

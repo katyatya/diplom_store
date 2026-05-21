@@ -59,6 +59,7 @@ model Product {
   updatedAt   DateTime    @updatedAt
   variants    ProductVariant[]
   wishlistBy  WishlistItem[]
+  collections ProductCollection[]
 }
 
 model ProductVariant {
@@ -157,7 +158,31 @@ model Banner {
   subtitle  String?
   imageUrl  String
   section   String   @default("main")
+  collectionId String?
+  collection Collection? @relation(fields: [collectionId], references: [id], onDelete: SetNull)
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Collection {
+  id        String   @id @default(cuid())
+  title     String
+  slug      String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  products  ProductCollection[]
+  banners   Banner[]
+}
+
+model ProductCollection {
+  id           String     @id @default(cuid())
+  productId     String
+  product       Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  collectionId  String
+  collection    Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  createdAt     DateTime   @default(now())
+
+  @@unique([productId, collectionId])
 }

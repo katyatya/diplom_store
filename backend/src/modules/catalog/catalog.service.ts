@@ -21,8 +21,9 @@ function getSizeLabelsByCategory(category: string): string[] {
 export class CatalogService {
   constructor(private readonly prisma: PrismaService) {}
 
-  listProducts(filters?: { category?: string; isNew?: string }) {
+  listProducts(filters?: { category?: string; isNew?: string; collectionSlug?: string }) {
     const category = filters?.category?.trim();
+    const collectionSlug = filters?.collectionSlug?.trim();
     const isNew =
       filters?.isNew === "true"
         ? true
@@ -35,6 +36,18 @@ export class CatalogService {
         isActive: true,
         ...(category ? { category } : {}),
         ...(isNew !== undefined ? { isNew } : {}),
+        ...(collectionSlug
+          ? {
+              collections: {
+                some: {
+                  collection: {
+                    slug: collectionSlug,
+                    isActive: true,
+                  },
+                },
+              },
+            }
+          : {}),
       },
       include: { variants: { where: { isActive: true }, orderBy: { createdAt: "asc" } } },
       orderBy: { createdAt: "desc" },
@@ -94,6 +107,9 @@ export class CatalogService {
       where: {
         isActive: true,
         ...(section ? { section } : {}),
+      },
+      include: {
+        collection: { select: { slug: true, title: true } },
       },
       orderBy: { createdAt: "desc" },
     });
