@@ -118,11 +118,6 @@ export default function CartPage() {
         >
           Корзина
         </h1>
-        {!authorized ? (
-          <p className="mt-2 text-xs text-muted-foreground">
-            Гостевой режим — войдите в аккаунт, чтобы сохранить корзину
-          </p>
-        ) : null}
       </div>
 
       {status ? <p className="text-sm text-muted-foreground">{status}</p> : null}
@@ -171,7 +166,7 @@ export default function CartPage() {
                     >
                       {item.product.name}
                     </Link>
-                    <p className="mt-1 text-xs  text-[#0f4f4b] ">
+                    <p className="mt-1 text-xs text-muted-foreground  ">
                       Размер: {item.sizeLabel === "ONE_SIZE" ? "ONE SIZE" : item.sizeLabel}
                     </p>
                   </div>
