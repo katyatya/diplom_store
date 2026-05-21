@@ -5,6 +5,8 @@ import { useEffect, useRef, useState } from "react";
 import { Product, addProductToCart, fetchProduct, fetchProducts, fetchStylistLooks } from "@/lib/api";
 import { OutfitPreview } from "@/components/features/outfits/outfit-preview";
 import { getPrimaryProductImage, getProductImageUrls } from "@/lib/product-images";
+import { buildProductsById } from "@/lib/catalog";
+import { formatPrice, formatSizeLabel } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/components/ui/toast";
@@ -47,12 +49,7 @@ export function ProductPageClient({ productSlug }: ProductPageClientProps) {
           look.items.some((item) => item.productId === product.id),
         );
         setRelatedStylistLooks(matchingLooks);
-        setProductsById(
-          products.reduce<Record<string, Product>>((acc, currentProduct) => {
-            acc[currentProduct.id] = currentProduct;
-            return acc;
-          }, {}),
-        );
+        setProductsById(buildProductsById(products));
       })
       .catch(() => {
         setRelatedStylistLooks([]);
@@ -185,7 +182,7 @@ export function ProductPageClient({ productSlug }: ProductPageClientProps) {
         <aside className="order-3 grid gap-4 lg:pl-1">
           <div className="grid gap-2">
             <h1 className="text-2xl font-semibold uppercase tracking-wide lg:text-[30px]">{product.name}</h1>
-            <p className="text-xl font-semibold">{Number(product.price).toLocaleString("ru-RU")} руб</p>
+            <p className="text-xl font-semibold">{formatPrice(product.price, "word")}</p>
           </div>
           <div className="grid gap-2">
             <p className="text-sm font-medium">Размер</p>
@@ -203,7 +200,7 @@ export function ProductPageClient({ productSlug }: ProductPageClientProps) {
                   }
                   onClick={() => setSelectedVariantId(variant.id)}
                 >
-                  {variant.sizeLabel === "ONE_SIZE" ? "ONE SIZE" : variant.sizeLabel}
+                  {formatSizeLabel(variant.sizeLabel)}
                 </Button>
               ))}
             </div>

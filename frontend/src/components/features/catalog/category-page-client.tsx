@@ -3,15 +3,12 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import {
-  Product,
-  addToWishlist,
-  fetchCategories,
-  fetchWishlist,
-  fetchProducts,
-} from "@/lib/api";
+import { Product, fetchCategories, fetchProducts } from "@/lib/api";
 import { findCategoryBySlug } from "@/lib/catalog-categories";
 import { getPrimaryProductImage } from "@/lib/product-images";
+import { formatPrice } from "@/lib/format";
+import { getProductHref } from "@/lib/catalog";
+import { useWishlist } from "@/hooks/use-wishlist";
 
 type CategoryPageClientProps = {
   categorySlug: string;
@@ -21,8 +18,8 @@ export function CategoryPageClient({ categorySlug }: CategoryPageClientProps) {
   const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [resolvedCategory, setResolvedCategory] = useState<string>("");
-  const [status, setStatus] = useState("");
-  const [wishlistProductIds, setWishlistProductIds] = useState<Set<string>>(new Set());
+  const [pageStatus, setPageStatus] = useState("");
+  const { wishlistProductIds, status, setStatus, addProductToWishlist } = useWishlist();
 
   useEffect(() => {
     if (!categorySlug) return;
@@ -34,40 +31,20 @@ export function CategoryPageClient({ categorySlug }: CategoryPageClientProps) {
         if (!categoryName) {
           setResolvedCategory("");
           setProducts([]);
-          setStatus("Категория не найдена.");
+          setPageStatus("Категория не найдена.");
           return;
         }
 
         setResolvedCategory(categoryName);
         const loadedProducts = await fetchProducts({ category: categoryName });
         setProducts(loadedProducts);
-        setStatus("");
+        setPageStatus("");
       } catch {
         setProducts([]);
-        setStatus("Не удалось загрузить товары категории.");
+        setPageStatus("Не удалось загрузить товары категории.");
       }
     })();
   }, [categorySlug]);
-
-  useEffect(() => {
-    void fetchWishlist()
-      .then((items) => {
-        setWishlistProductIds(new Set(items.map((item) => item.product.id)));
-      })
-      .catch(() => {
-        setWishlistProductIds(new Set());
-      });
-  }, []);
-
-  async function onAddToWishlist(productId: string) {
-    try {
-      const updatedWishlist = await addToWishlist(productId);
-      setWishlistProductIds(new Set(updatedWishlist.map((item) => item.product.id)));
-      setStatus("Товар добавлен в избранное.");
-    } catch {
-      setStatus("Для добавления в избранное требуется вход.");
-    }
-  }
 
   return (
     <section className="grid gap-8">
@@ -99,20 +76,21 @@ export function CategoryPageClient({ categorySlug }: CategoryPageClientProps) {
         </div>
       ) : null}
 
+      {pageStatus ? <p className="text-sm text-muted-foreground">{pageStatus}</p> : null}
       {status ? <p className="text-sm text-muted-foreground">{status}</p> : null}
 
       <div className="grid gap-x-4 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
         {products.map((product) => {
-          const productIdentifier = product.slug || product.id;
+          const productHref = getProductHref(product);
           return (
             <article
               key={product.id}
               className="group cursor-pointer"
-              onClick={() => router.push(`/catalog/product/${productIdentifier}`)}
+              onClick={() => router.push(productHref)}
               onKeyDown={(event) => {
                 if (event.key === "Enter" || event.key === " ") {
                   event.preventDefault();
-                  router.push(`/catalog/product/${productIdentifier}`);
+                  router.push(productHref);
                 }
               }}
               role="link"
@@ -130,7 +108,7 @@ export function CategoryPageClient({ categorySlug }: CategoryPageClientProps) {
                   className={`absolute right-3 top-3 flex h-8 w-8 items-center justify-center bg-white/80 text-base backdrop-blur-sm transition-all duration-200 group-hover:opacity-100 ${wishlistProductIds.has(product.id) ? "text-red-500 opacity-100" : "text-muted-foreground opacity-0 hover:text-foreground"}`}
                   onClick={(event) => {
                     event.stopPropagation();
-                    void onAddToWishlist(product.id);
+                    void addProductToWishlist(product.id);
                   }}
                 >
                   ♡
@@ -139,7 +117,7 @@ export function CategoryPageClient({ categorySlug }: CategoryPageClientProps) {
               <div className="mt-3 grid gap-1">
                 <h2 className="text-xs uppercase tracking-wide">{product.name}</h2>
                 <p className="text-sm font-light text-muted-foreground">
-                  {Number(product.price).toLocaleString("ru-RU")} ₽
+                  {formatPrice(product.price)}
                 </p>
               </div>
             </article>

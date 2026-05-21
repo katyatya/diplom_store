@@ -2,10 +2,8 @@
 
 import {
   type DragEvent as ReactDragEvent,
-  type MouseEvent as ReactMouseEvent,
   useEffect,
   useMemo,
-  useRef,
   useState,
 } from "react";
 import {
@@ -25,8 +23,11 @@ import {
   updateOutfit,
 } from "@/lib/api";
 import { requestAuthRequired } from "@/lib/auth-required";
-import { getPrimaryProductImage } from "@/lib/product-images";
-import { OutfitPreview } from "@/components/features/outfits/outfit-preview";
+import { OutfitCanvas } from "@/components/features/outfits/outfit-canvas";
+import type { CanvasOutfitItem } from "@/components/features/outfits/outfit-canvas";
+import { ConstructorProductCatalog } from "@/components/features/outfits/constructor-product-catalog";
+import { ConstructorSettingsPanel } from "@/components/features/outfits/constructor-settings-panel";
+import { SavedOutfitsGrid } from "@/components/features/outfits/saved-outfits-grid";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
@@ -37,16 +38,6 @@ const DEFAULT_ITEM_WIDTH = 160;
 const DEFAULT_ITEM_HEIGHT = 220;
 
 type OutfitPlacement = Outfit["items"][number];
-type CanvasOutfitItem = {
-  nodeId: string;
-  productId: string;
-  x: number;
-  y: number;
-  zIndex: number;
-  width: number;
-  height: number;
-  rotation: number;
-};
 
 type ConstructorEditorProps = {
   initialProductId?: string;
@@ -64,6 +55,19 @@ function normalizeOutfitItems(items: Outfit["items"]): CanvasOutfitItem[] {
     height: item.height ?? DEFAULT_ITEM_HEIGHT,
     rotation: item.rotation ?? 0,
   }));
+}
+
+function createCanvasItemNode(productId: string, index: number, x: number, y: number): CanvasOutfitItem {
+  return {
+    nodeId: `${productId}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    productId,
+    x,
+    y,
+    zIndex: index + 1,
+    width: DEFAULT_ITEM_WIDTH,
+    height: DEFAULT_ITEM_HEIGHT,
+    rotation: 0,
+  };
 }
 
 function toApiPayload(items: CanvasOutfitItem[]): OutfitPlacement[] {
@@ -97,21 +101,7 @@ export function ConstructorEditor({ initialProductId, mode = "user" }: Construct
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const { showToast } = useToast();
-  const dragStateRef = useRef<{
-    nodeId: string;
-    offsetX: number;
-    offsetY: number;
-  } | null>(null);
-  const resizeStateRef = useRef<{
-    nodeId: string;
-    startX: number;
-    startY: number;
-    startWidth: number;
-    startHeight: number;
-    itemX: number;
-    itemY: number;
-  } | null>(null);
-  const handledInitialProductIdRef = useRef<string | null>(null);
+  const [handledInitialProductId, setHandledInitialProductId] = useState<string | null>(null);
 
   useEffect(() => {
     void fetchProducts().then(setProducts).catch(() => setProducts([]));
@@ -169,26 +159,22 @@ export function ConstructorEditor({ initialProductId, mode = "user" }: Construct
 
   useEffect(() => {
     if (!initialProductId || products.length === 0) return;
-    if (handledInitialProductIdRef.current === initialProductId) return;
+    if (handledInitialProductId === initialProductId) return;
     const targetProduct = productsById[initialProductId];
     if (!targetProduct) return;
     addProductToCanvas(targetProduct);
-    handledInitialProductIdRef.current = initialProductId;
-  }, [initialProductId, products.length, productsById]);
+    setHandledInitialProductId(initialProductId);
+  }, [handledInitialProductId, initialProductId, products.length, productsById]);
 
   function addProductToCanvas(product: Product) {
     setCanvasItems((current) => [
       ...current,
-      {
-        nodeId: `${product.id}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-        productId: product.id,
-        x: 120 + (current.length % 3) * 16,
-        y: 50 + (current.length % 3) * 22,
-        zIndex: current.length + 1,
-        width: DEFAULT_ITEM_WIDTH,
-        height: DEFAULT_ITEM_HEIGHT,
-        rotation: 0,
-      },
+      createCanvasItemNode(
+        product.id,
+        current.length,
+        120 + (current.length % 3) * 16,
+        50 + (current.length % 3) * 22,
+      ),
     ]);
   }
 
@@ -197,16 +183,7 @@ export function ConstructorEditor({ initialProductId, mode = "user" }: Construct
     const boundedY = Math.max(0, Math.min(y, CANVAS_HEIGHT - DEFAULT_ITEM_HEIGHT));
     setCanvasItems((current) => [
       ...current,
-      {
-        nodeId: `${product.id}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-        productId: product.id,
-        x: boundedX,
-        y: boundedY,
-        zIndex: current.length + 1,
-        width: DEFAULT_ITEM_WIDTH,
-        height: DEFAULT_ITEM_HEIGHT,
-        rotation: 0,
-      },
+      createCanvasItemNode(product.id, current.length, boundedX, boundedY),
     ]);
   }
 
@@ -232,86 +209,6 @@ export function ConstructorEditor({ initialProductId, mode = "user" }: Construct
       current.map((item) => (item.nodeId === nodeId ? { ...item, ...patch } : item)),
     );
   }
-
-  function onCanvasItemMouseDown(
-    event: ReactMouseEvent<HTMLImageElement>,
-    item: CanvasOutfitItem,
-  ) {
-    event.preventDefault();
-    setSelectedNodeId(item.nodeId);
-
-    const containerRect = (
-      event.currentTarget.closest("#outfit-constructor-canvas") as HTMLDivElement | null
-    )?.getBoundingClientRect();
-    if (!containerRect) return;
-
-    dragStateRef.current = {
-      nodeId: item.nodeId,
-      offsetX: event.clientX - containerRect.left - item.x,
-      offsetY: event.clientY - containerRect.top - item.y,
-    };
-  }
-
-  function onResizeHandleMouseDown(
-    event: ReactMouseEvent<HTMLButtonElement>,
-    item: CanvasOutfitItem,
-  ) {
-    event.preventDefault();
-    event.stopPropagation();
-    setSelectedNodeId(item.nodeId);
-    resizeStateRef.current = {
-      nodeId: item.nodeId,
-      startX: event.clientX,
-      startY: event.clientY,
-      startWidth: item.width,
-      startHeight: item.height,
-      itemX: item.x,
-      itemY: item.y,
-    };
-  }
-
-  useEffect(() => {
-    function onMouseMove(event: MouseEvent) {
-      const resize = resizeStateRef.current;
-      if (resize) {
-        const deltaX = event.clientX - resize.startX;
-        const deltaY = event.clientY - resize.startY;
-        const maxWidth = CANVAS_WIDTH - resize.itemX;
-        const maxHeight = CANVAS_HEIGHT - resize.itemY;
-        updateCanvasItem(resize.nodeId, {
-          width: Math.max(60, Math.min(maxWidth, resize.startWidth + deltaX)),
-          height: Math.max(60, Math.min(maxHeight, resize.startHeight + deltaY)),
-        });
-        return;
-      }
-
-      const drag = dragStateRef.current;
-      if (!drag) return;
-      const canvas = document.getElementById("outfit-constructor-canvas");
-      if (!canvas) return;
-      const rect = canvas.getBoundingClientRect();
-      const nextX = event.clientX - rect.left - drag.offsetX;
-      const nextY = event.clientY - rect.top - drag.offsetY;
-
-      updateCanvasItem(drag.nodeId, {
-        x: Math.max(0, Math.min(nextX, CANVAS_WIDTH - 40)),
-        y: Math.max(0, Math.min(nextY, CANVAS_HEIGHT - 40)),
-      });
-    }
-
-    function onMouseUp() {
-      dragStateRef.current = null;
-      resizeStateRef.current = null;
-    }
-
-    window.addEventListener("mousemove", onMouseMove);
-    window.addEventListener("mouseup", onMouseUp);
-
-    return () => {
-      window.removeEventListener("mousemove", onMouseMove);
-      window.removeEventListener("mouseup", onMouseUp);
-    };
-  }, []);
 
   function removeSelectedItem() {
     if (!selectedNodeId) return;
@@ -515,61 +412,16 @@ export function ConstructorEditor({ initialProductId, mode = "user" }: Construct
         </div>
 
         <div className="grid items-start gap-4 xl:grid-cols-[360px_minmax(430px,1fr)_240px]">
-          {/* Product catalog */}
-          <div className="grid max-h-[620px] gap-3 overflow-hidden border p-3">
-            <p className="text-xs uppercase tracking-[0.15em]">Каталог товаров</p>
-            <div className="grid min-h-0 flex-1 gap-3 md:grid-cols-[130px_minmax(0,1fr)]">
-              <aside className="grid content-start gap-1 overflow-auto">
-                
-                {categories.map((category) => (
-                  <button
-                    key={category}
-                    type="button"
-                    onClick={() => setSelectedCategory(category)}
-                    className={`border px-2 py-1.5 text-left text-xs uppercase tracking-wide transition-colors ${
-                      selectedCategory === category
-                        ? "border-foreground bg-foreground text-white"
-                        : "hover:bg-muted/60"
-                    }`}
-                  >
-                    {category}
-                  </button>
-                ))}
-              </aside>
+          <ConstructorProductCatalog
+            categories={categories}
+            selectedCategory={selectedCategory}
+            visibleProducts={visibleProducts}
+            onSelectCategory={setSelectedCategory}
+            onAddProduct={addProductToCanvas}
+            onProductDragStart={onProductDragStart}
+          />
 
-              <div className="flex max-h-[420px] flex-col gap-2 overflow-y-auto pr-1 [scrollbar-color:hsl(var(--muted-foreground))_hsl(var(--muted))] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-muted-foreground/40 [&::-webkit-scrollbar-track]:bg-muted/50">
-                {visibleProducts.length === 0 ? (
-                  <p className="py-4 text-xs text-muted-foreground">Нет товаров в этой категории.</p>
-                ) : (
-                  visibleProducts.map((product) => (
-                    <article
-                      key={product.id}
-                      onClick={() => addProductToCanvas(product)}
-                      draggable
-                      onDragStart={(event) => onProductDragStart(event, product.id)}
-                      className="flex cursor-pointer items-center gap-3 border p-2 transition-colors hover:bg-muted/40"
-                    >
-                      <img
-                        src={getPrimaryProductImage(product)}
-                        alt={product.name}
-                        className="h-16 w-16 shrink-0 object-cover"
-                      />
-                      <div className="min-w-0 grid gap-1">
-                        <span className="line-clamp-2 text-xs leading-snug">{product.name}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {Number(product.price).toLocaleString("ru-RU")} ₽
-                        </span>
-                      </div>
-                    </article>
-                  ))
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Canvas */}
           <div
-            id="outfit-constructor-canvas"
             className="relative mx-auto overflow-hidden border bg-[#fafafa] xl:mx-0"
             style={{ width: CANVAS_WIDTH, height: CANVAS_HEIGHT }}
             onDragOver={(event) => {
@@ -577,133 +429,36 @@ export function ConstructorEditor({ initialProductId, mode = "user" }: Construct
               event.dataTransfer.dropEffect = "copy";
             }}
             onDrop={onCanvasDrop}
-            onMouseDown={(event) => {
-              if (event.target === event.currentTarget) {
-                setSelectedNodeId(null);
-              }
-            }}
           >
             {canvasItems.length === 0 ? (
-              <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+              <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
                 <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground/50">
                   Перетащите товары сюда
                 </p>
               </div>
             ) : null}
-            {canvasItems
-              .slice()
-              .sort((a, b) => a.zIndex - b.zIndex)
-              .map((item) => {
-                const product = productsById[item.productId];
-                if (!product) return null;
-                return (
-                  <div
-                    key={item.nodeId}
-                    style={{
-                      position: "absolute",
-                      left: item.x,
-                      top: item.y,
-                      width: item.width,
-                      height: item.height,
-                      transform: `rotate(${item.rotation}deg)`,
-                    }}
-                  >
-                    <img
-                      src={getPrimaryProductImage(product)}
-                      alt={product.name}
-                      draggable={false}
-                      onMouseDown={(event) => onCanvasItemMouseDown(event, item)}
-                      onClick={() => setSelectedNodeId(item.nodeId)}
-                      className="block h-full w-full select-none object-cover"
-                      style={{
-                        cursor: "grab",
-                        outline:
-                          selectedNodeId === item.nodeId
-                            ? "2px solid hsl(var(--foreground))"
-                            : "none",
-                      }}
-                    />
-                    {selectedNodeId === item.nodeId ? (
-                      <button
-                        type="button"
-                        aria-label="Изменить размер"
-                        onMouseDown={(event) => onResizeHandleMouseDown(event, item)}
-                        className="absolute -bottom-1.5 -right-1.5 h-4 w-4 cursor-nwse-resize bg-foreground"
-                      />
-                    ) : null}
-                    {selectedNodeId === item.nodeId ? (
-                      <button
-                        type="button"
-                        aria-label="Удалить с полотна"
-                        onMouseDown={(event) => {
-                          event.preventDefault();
-                          event.stopPropagation();
-                        }}
-                        onClick={(event) => {
-                          event.preventDefault();
-                          event.stopPropagation();
-                          removeItemFromCanvas(item.nodeId);
-                        }}
-                        className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center bg-foreground text-xs text-white transition-opacity hover:opacity-80"
-                      >
-                        ✕
-                      </button>
-                    ) : null}
-                  </div>
-                );
-              })}
+            <OutfitCanvas
+              width={CANVAS_WIDTH}
+              height={CANVAS_HEIGHT}
+              productsById={productsById}
+              items={canvasItems}
+              selectedNodeId={selectedNodeId}
+              onSelect={setSelectedNodeId}
+              onChangeItem={updateCanvasItem}
+            />
           </div>
 
-          {/* Settings panel */}
-          <aside className="grid gap-4 border p-4">
-            <p className="text-xs uppercase tracking-[0.15em]">Настройки</p>
-            {selectedItem ? (
-              <>
-                <label className="grid gap-2 text-xs text-muted-foreground">
-                  Поворот: {Math.round(selectedItem.rotation)}°
-                  <input
-                    type="range"
-                    min={-180}
-                    max={180}
-                    value={Math.round(selectedItem.rotation)}
-                    className="w-full accent-foreground"
-                    onChange={(event) =>
-                      updateCanvasItem(selectedItem.nodeId, {
-                        rotation: Number(event.target.value),
-                      })
-                    }
-                  />
-                </label>
-                <div className="grid gap-2">
-                  <button
-                    type="button"
-                    onClick={bringSelectedForward}
-                    className="border px-3 py-2 text-xs uppercase tracking-wide transition-colors hover:bg-muted"
-                  >
-                    ↑ Слой выше
-                  </button>
-                  <button
-                    type="button"
-                    onClick={sendSelectedBackward}
-                    className="border px-3 py-2 text-xs uppercase tracking-wide transition-colors hover:bg-muted"
-                  >
-                    ↓ Слой ниже
-                  </button>
-                  <button
-                    type="button"
-                    onClick={removeSelectedItem}
-                    className="border border-foreground/20 px-3 py-2 text-xs uppercase tracking-wide text-muted-foreground transition-colors hover:border-foreground hover:text-foreground"
-                  >
-                    Удалить
-                  </button>
-                </div>
-              </>
-            ) : (
-              <p className="text-xs leading-relaxed text-muted-foreground">
-                Нажмите на товар на полотне, чтобы изменить его параметры.
-              </p>
-            )}
-          </aside>
+          <ConstructorSettingsPanel
+            selectedRotation={selectedItem ? selectedItem.rotation : null}
+            hasSelection={Boolean(selectedItem)}
+            onRotationChange={(nextRotation) => {
+              if (!selectedItem) return;
+              updateCanvasItem(selectedItem.nodeId, { rotation: nextRotation });
+            }}
+            onBringForward={bringSelectedForward}
+            onSendBackward={sendSelectedBackward}
+            onRemoveSelected={removeSelectedItem}
+          />
         </div>
 
         <div className="mt-4 flex items-center justify-between gap-4 border-t pt-4">
@@ -729,65 +484,15 @@ export function ConstructorEditor({ initialProductId, mode = "user" }: Construct
         </div>
       </div>
 
-      {/* Saved outfits */}
-      <div className="grid gap-6">
-        <div className="flex items-end justify-between border-b pb-4">
-          <h2
-            className="text-3xl font-light italic"
-            style={{ fontFamily: "var(--font-serif)" }}
-          >
-            {mode === "adminStylist" ? "Образы стилиста" : "Мои образы"}
-          </h2>
-          <span className="text-xs text-muted-foreground">{myOutfits.length} образов</span>
-        </div>
-
-        {myOutfits.length === 0 ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">
-            {mode === "adminStylist" ? "Пока нет образов стилиста." : "Пока нет сохранённых образов."}
-          </p>
-        ) : null}
-
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {myOutfits.map((outfit) => (
-            <article key={outfit.id} className="group border p-4 grid gap-3">
-              <OutfitPreview items={outfit.items} productsById={productsById} width={160} height={220} />
-              <div className="grid gap-1">
-                <p className="text-xs uppercase tracking-wide font-medium">{outfit.name}</p>
-                <p className="text-xs text-muted-foreground">{outfit.description || "Без описания"}</p>
-                <p className="text-xs text-muted-foreground">{outfit.items.length} поз.</p>
-              </div>
-              <div className="flex items-center justify-between gap-2 border-t pt-3">
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    className="border px-3 py-1.5 text-xs uppercase tracking-wide transition-colors hover:bg-muted"
-                    onClick={() => loadOutfitToCanvas(outfit)}
-                  >
-                    Изменить
-                  </button>
-                  {mode === "user" ? (
-                    <button
-                      type="button"
-                      className="border border-black bg-black px-3 py-1.5 text-xs uppercase tracking-wide text-white transition-opacity hover:opacity-80"
-                      onClick={() => void onAddOutfitToCart(outfit.id)}
-                      disabled={pendingCartOutfitId === outfit.id}
-                    >
-                      {pendingCartOutfitId === outfit.id ? "Добавляем..." : "В корзину"}
-                    </button>
-                  ) : null}
-                </div>
-                <button
-                  type="button"
-                  className="shrink-0 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
-                  onClick={() => void onDeleteOutfit(outfit.id)}
-                >
-                  Удалить
-                </button>
-              </div>
-            </article>
-          ))}
-        </div>
-      </div>
+      <SavedOutfitsGrid
+        mode={mode}
+        outfits={myOutfits}
+        productsById={productsById}
+        pendingCartOutfitId={pendingCartOutfitId}
+        onEditOutfit={loadOutfitToCanvas}
+        onDeleteOutfit={(outfitId) => void onDeleteOutfit(outfitId)}
+        onAddToCart={(outfitId) => void onAddOutfitToCart(outfitId)}
+      />
 
     </section>
   );
