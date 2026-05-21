@@ -29,9 +29,10 @@ type AuthMode = "login" | "register";
 type AuthDialogProps = {
   user: AuthUser | null;
   onUserChange: (user: AuthUser | null) => void;
+  iconOnly?: boolean;
 };
 
-export function AuthDialog({ user, onUserChange }: AuthDialogProps) {
+export function AuthDialog({ user, onUserChange, iconOnly }: AuthDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [mode, setMode] = useState<AuthMode>("login");
   const [name, setName] = useState("");
@@ -109,25 +110,39 @@ export function AuthDialog({ user, onUserChange }: AuthDialogProps) {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button size="icon" variant="outline" aria-label="Открыть вход и регистрацию">
-          <UserRound className="h-4 w-4" />
-        </Button>
+        {iconOnly ? (
+          <button
+            type="button"
+            aria-label="Открыть вход и регистрацию"
+            className="flex h-9 w-9 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <UserRound size={18} strokeWidth={1.5} />
+          </button>
+        ) : (
+          <Button size="icon" variant="outline" aria-label="Открыть вход и регистрацию">
+            <UserRound className="h-4 w-4" />
+          </Button>
+        )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[440px]">
+      <DialogContent className="sm:max-w-[400px]">
         <DialogHeader>
-          <DialogTitle>
-            {user ? "Личный кабинет" : mode === "login" ? "Вход" : "Регистрация"}
+          <DialogTitle
+            className="text-center text-2xl font-light italic"
+            style={{ fontFamily: "var(--font-serif)" }}
+          >
+            {user ? "Личный кабинет" : mode === "login" ? "Войти" : "Регистрация"}
           </DialogTitle>
         </DialogHeader>
         {user ? (
           <div className="grid gap-3">
-            <p className="text-sm text-muted-foreground">
-              Вы вошли как {user.name || "Пользователь"} ({user.email})
+            <p className="text-center text-sm text-muted-foreground">
+              {user.name || "Пользователь"}<br />
+              <span className="text-xs">{user.email}</span>
             </p>
-            <Button asChild variant="secondary" onClick={() => setIsOpen(false)}>
-              <Link href="/profile">Перейти в профиль</Link>
+            <Button asChild className="h-11 w-full text-xs uppercase tracking-[0.15em]" onClick={() => setIsOpen(false)}>
+              <Link href="/profile">Личный кабинет</Link>
             </Button>
-            <Button variant="outline" onClick={() => void onLogout()}>
+            <Button variant="outline" className="h-11 w-full text-xs uppercase tracking-[0.15em]" onClick={() => void onLogout()}>
               Выйти
             </Button>
           </div>
@@ -135,11 +150,21 @@ export function AuthDialog({ user, onUserChange }: AuthDialogProps) {
           <Tabs
             value={mode}
             onValueChange={(value) => setMode(value as AuthMode)}
-            className="grid gap-3"
+            className="grid gap-4"
           >
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">Вход</TabsTrigger>
-              <TabsTrigger value="register">Регистрация</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 bg-transparent p-0 border-b">
+              <TabsTrigger
+                value="login"
+                className="rounded-none border-b-2 border-transparent pb-2 text-xs uppercase tracking-[0.15em] data-[state=active]:border-foreground data-[state=active]:shadow-none"
+              >
+                Вход
+              </TabsTrigger>
+              <TabsTrigger
+                value="register"
+                className="rounded-none border-b-2 border-transparent pb-2 text-xs uppercase tracking-[0.15em] data-[state=active]:border-foreground data-[state=active]:shadow-none"
+              >
+                Регистрация
+              </TabsTrigger>
             </TabsList>
             <TabsContent value="login" className="mt-0">
               <AuthForm
@@ -231,7 +256,11 @@ function AuthForm({
         autoComplete={submitLabel === "Войти" ? "current-password" : "new-password"}
         required
       />
-      <Button type="submit" disabled={isSubmitting}>
+      <Button
+        type="submit"
+        disabled={isSubmitting}
+        className="h-11 w-full text-xs uppercase tracking-[0.15em]"
+      >
         {isSubmitting ? "Подождите..." : submitLabel}
       </Button>
     </form>

@@ -7,7 +7,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createOrder, fetchCart, fetchMe } from "@/lib/api";
 import { requestAuthRequired } from "@/lib/auth-required";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -31,7 +30,7 @@ const PHONE_MASK_REGEX = /^\+7 \(\d{3}\) \d{3}-\d{2}-\d{2}$/;
 
 export default function CheckoutPage() {
   return (
-    <Suspense fallback={<p className="text-sm text-muted-foreground">Загрузка оформления заказа...</p>}>
+    <Suspense fallback={<p className="text-sm text-muted-foreground">Загрузка...</p>}>
       <CheckoutPageInner />
     </Suspense>
   );
@@ -198,173 +197,226 @@ function CheckoutPageInner() {
   }
 
   return (
-    <section className="grid gap-4">
-      <h1 className="text-3xl font-semibold tracking-tight">Оформление заказа</h1>
+    <section className="grid gap-8">
+      <div className="border-b pb-6">
+        <Link
+          href="/cart"
+          className="mb-3 inline-flex items-center gap-2 text-xs uppercase tracking-[0.15em] text-muted-foreground transition-colors hover:text-foreground"
+        >
+          ← Корзина
+        </Link>
+        <h1
+          className="text-5xl font-light italic"
+          style={{ fontFamily: "var(--font-serif)" }}
+        >
+          Оформление заказа
+        </h1>
+      </div>
+
       {!authorized ? (
         <p className="text-sm text-muted-foreground">
-          Оформление заказа доступно только после входа.{" "}
-          <Link className="underline" href="/">
-            Войти
+          Оформление заказа доступно только после{" "}
+          <Link className="underline underline-offset-2" href="/">
+            входа в аккаунт
           </Link>
+          .
         </p>
       ) : null}
-      <Card className="max-w-xl">
-        <CardHeader>
-          <CardTitle>Ваш заказ</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-3">
-          {cartItems.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Корзина пуста.</p>
-          ) : null}
-          {cartItems.map((item) => (
-            <article
-              key={item.id}
-              className="grid grid-cols-[56px_minmax(0,1fr)] items-start gap-3 rounded-md border p-2"
-            >
-              <img
-                src={getPrimaryProductImage(item.variant.product)}
-                alt={item.variant.product.name}
-                className="h-14 w-14 rounded-md object-cover"
-              />
+
+      <div className="grid gap-8 lg:grid-cols-[1fr_380px] lg:items-start">
+        {/* Form */}
+        <div>
+          <form onSubmit={(e) => void onSubmit(e)} className="grid gap-6">
+            <fieldset className="grid gap-4">
+              <legend className="mb-2 text-xs uppercase tracking-[0.2em]">Данные получателя</legend>
               <div className="grid gap-1">
-                <p className="text-sm font-medium">{item.variant.product.name}</p>
-                <p className="text-xs text-muted-foreground">
-                  Цена: {Number(item.variant.product.price).toLocaleString("ru-RU")} руб
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Размер: {item.variant.sizeLabel === "ONE_SIZE" ? "ONE SIZE" : item.variant.sizeLabel}
-                </p>
-                <p className="text-xs text-muted-foreground">Количество: {item.quantity}</p>
+                <Input
+                  value={customerName}
+                  onChange={(e) => {
+                    setCustomerName(e.target.value);
+                    setErrors((current) => ({ ...current, customerName: undefined }));
+                  }}
+                  placeholder="ФИО"
+                  required
+                  className="h-11"
+                />
+                {errors.customerName ? (
+                  <p className="text-xs text-destructive">{errors.customerName}</p>
+                ) : null}
               </div>
-            </article>
-          ))}
-          {cartItems.length > 0 ? (
-            <div className="mt-1 grid gap-1 border-t pt-2 text-sm">
-              <p className="text-muted-foreground">
-                Товары: {orderItemsTotal.toLocaleString("ru-RU")} руб
-              </p>
-              <p className="text-muted-foreground">
-                Доставка: {deliveryPrice.toLocaleString("ru-RU")} руб
-              </p>
-              <p className="font-semibold">Итого: {totalAmount.toLocaleString("ru-RU")} руб</p>
-            </div>
-          ) : null}
-        </CardContent>
-      </Card>
-      <Card className="max-w-xl">
-        <CardHeader>
-          <CardTitle>Данные получателя</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={onSubmit} className="grid gap-3">
-            <Input
-              value={customerName}
-              onChange={(e) => {
-                setCustomerName(e.target.value);
-                setErrors((current) => ({ ...current, customerName: undefined }));
-              }}
-              placeholder="ФИО"
-              required
-            />
-            {errors.customerName ? (
-              <p className="text-sm text-destructive">{errors.customerName}</p>
-            ) : null}
-            <Input
-              value={phone}
-              onChange={(e) => {
-                setPhone(formatPhoneInput(e.target.value));
-                setErrors((current) => ({ ...current, phone: undefined }));
-              }}
-              onBlur={() => {
-                const trimmedPhone = phone.trim();
-                if (!trimmedPhone || PHONE_MASK_REGEX.test(trimmedPhone)) {
-                  setErrors((current) => ({ ...current, phone: undefined }));
-                  return;
-                }
-                setErrors((current) => ({
-                  ...current,
-                  phone: "Неверно введен номер телефона",
-                }));
-              }}
-              placeholder="+7 (999) 123-45-67"
-              inputMode="tel"
-              autoComplete="tel"
-              required
-            />
-            {errors.phone ? <p className="text-sm text-orange-500">{errors.phone}</p> : null}
-            <div className="grid gap-1 rounded-md border bg-muted/30 p-2">
-              <p className="text-xs text-muted-foreground">Email из профиля</p>
-              <p className="text-sm">{profileEmail || "—"}</p>
-            </div>
-            <Label className="grid gap-1">
-              <span>Доставка</span>
-              <select
-                className="h-10 rounded-md border border-input bg-background px-3 text-sm"
-                value={deliveryType}
-                onChange={(e) => {
-                  const nextType = e.target.value as "PICKUP" | "CDEK";
-                  setDeliveryType(nextType);
-                  if (nextType === "PICKUP") {
-                    setAddress("");
-                  }
-                  setErrors((current) => ({ ...current, address: undefined }));
-                }}
-              >
-                <option value="PICKUP">Самовывоз (0 руб)</option>
-                <option value="CDEK">Доставка CDEK (370 руб)</option>
-              </select>
-            </Label>
-            {deliveryType === "CDEK" ? (
-              <AddressInput
-                value={address}
-                onChange={(nextValue) => {
-                  setAddress(nextValue);
-                  setErrors((current) => ({ ...current, address: undefined }));
-                }}
-              />
-            ) : null}
-            {errors.address ? <p className="text-sm text-destructive">{errors.address}</p> : null}
-            <Label className="grid gap-1">
-              <span>Оплата</span>
-              <select
-                className="h-10 rounded-md border border-input bg-background px-3 text-sm"
-                value={paymentMethod}
-                onChange={(e) => {
-                  setPaymentMethod(e.target.value);
-                  setErrors((current) => ({ ...current, paymentMethod: undefined }));
-                }}
-              >
-                <option value="Онлайн">Онлайн</option>
-                <option value="При получении">При получении</option>
-              </select>
-            </Label>
-            {errors.paymentMethod ? (
-              <p className="text-sm text-destructive">{errors.paymentMethod}</p>
-            ) : null}
-            <Button type="submit">
-              Оформить заказ
+              <div className="grid gap-1">
+                <Input
+                  value={phone}
+                  onChange={(e) => {
+                    setPhone(formatPhoneInput(e.target.value));
+                    setErrors((current) => ({ ...current, phone: undefined }));
+                  }}
+                  onBlur={() => {
+                    const trimmedPhone = phone.trim();
+                    if (!trimmedPhone || PHONE_MASK_REGEX.test(trimmedPhone)) {
+                      setErrors((current) => ({ ...current, phone: undefined }));
+                      return;
+                    }
+                    setErrors((current) => ({
+                      ...current,
+                      phone: "Неверно введен номер телефона",
+                    }));
+                  }}
+                  placeholder="+7 (999) 123-45-67"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  required
+                  className="h-11"
+                />
+                {errors.phone ? <p className="text-xs text-destructive">{errors.phone}</p> : null}
+              </div>
+              <div className="grid gap-1 bg-muted/30 px-3 py-2.5">
+                <p className="text-xs text-muted-foreground">Email из профиля</p>
+                <p className="text-sm">{profileEmail || "—"}</p>
+              </div>
+            </fieldset>
+
+            <fieldset className="grid gap-4">
+              <legend className="mb-2 text-xs uppercase tracking-[0.2em]">Доставка</legend>
+              <Label className="grid gap-2">
+                <span className="text-xs text-muted-foreground">Способ доставки</span>
+                <select
+                  className="h-11 border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                  value={deliveryType}
+                  onChange={(e) => {
+                    const nextType = e.target.value as "PICKUP" | "CDEK";
+                    setDeliveryType(nextType);
+                    if (nextType === "PICKUP") {
+                      setAddress("");
+                    }
+                    setErrors((current) => ({ ...current, address: undefined }));
+                  }}
+                >
+                  <option value="PICKUP">Самовывоз — бесплатно</option>
+                  <option value="CDEK">Доставка CDEK — 370 ₽</option>
+                </select>
+              </Label>
+              {deliveryType === "CDEK" ? (
+                <div className="grid gap-1">
+                  <AddressInput
+                    value={address}
+                    onChange={(nextValue) => {
+                      setAddress(nextValue);
+                      setErrors((current) => ({ ...current, address: undefined }));
+                    }}
+                  />
+                  {errors.address ? (
+                    <p className="text-xs text-destructive">{errors.address}</p>
+                  ) : null}
+                </div>
+              ) : null}
+            </fieldset>
+
+            <fieldset className="grid gap-4">
+              <legend className="mb-2 text-xs uppercase tracking-[0.2em]">Оплата</legend>
+              <Label className="grid gap-2">
+                <span className="text-xs text-muted-foreground">Способ оплаты</span>
+                <select
+                  className="h-11 border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                  value={paymentMethod}
+                  onChange={(e) => {
+                    setPaymentMethod(e.target.value);
+                    setErrors((current) => ({ ...current, paymentMethod: undefined }));
+                  }}
+                >
+                  <option value="Онлайн">Онлайн</option>
+                  <option value="При получении">При получении</option>
+                </select>
+              </Label>
+              {errors.paymentMethod ? (
+                <p className="text-xs text-destructive">{errors.paymentMethod}</p>
+              ) : null}
+            </fieldset>
+
+            {status ? <p className="text-xs text-muted-foreground">{status}</p> : null}
+
+            <Button
+              type="submit"
+              className="h-12 w-full text-xs uppercase tracking-[0.2em]"
+            >
+              Подтвердить заказ
             </Button>
           </form>
-        </CardContent>
-      </Card>
-      {status ? <p className="text-sm text-muted-foreground">{status}</p> : null}
+        </div>
+
+        {/* Order summary */}
+        <div className="border p-6">
+          <h2 className="mb-4 text-xs uppercase tracking-[0.2em]">Ваш заказ</h2>
+          <div className="grid gap-4">
+            {cartItems.map((item) => (
+              <div key={item.id} className="grid grid-cols-[60px_1fr] gap-3">
+                <img
+                  src={getPrimaryProductImage(item.variant.product)}
+                  alt={item.variant.product.name}
+                  className="h-20 w-full object-cover"
+                />
+                <div className="grid content-start gap-1">
+                  <p className="text-xs uppercase tracking-wide leading-snug">
+                    {item.variant.product.name}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {item.variant.sizeLabel === "ONE_SIZE" ? "ONE SIZE" : item.variant.sizeLabel}
+                    {" · "}× {item.quantity}
+                  </p>
+                  <p className="text-sm font-light">
+                    {(Number(item.variant.product.price) * item.quantity).toLocaleString("ru-RU")} ₽
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {cartItems.length > 0 ? (
+            <div className="mt-6 grid gap-2 border-t pt-4">
+              <div className="flex justify-between text-sm text-muted-foreground">
+                <span>Товары</span>
+                <span>{orderItemsTotal.toLocaleString("ru-RU")} ₽</span>
+              </div>
+              <div className="flex justify-between text-sm text-muted-foreground">
+                <span>Доставка</span>
+                <span>{deliveryPrice === 0 ? "Бесплатно" : `${deliveryPrice.toLocaleString("ru-RU")} ₽`}</span>
+              </div>
+              <div className="flex items-center justify-between border-t pt-2">
+                <span className="text-sm font-medium uppercase tracking-wide">Итого</span>
+                <span className="text-lg font-light">{totalAmount.toLocaleString("ru-RU")} ₽</span>
+              </div>
+            </div>
+          ) : null}
+        </div>
+      </div>
+
       <Dialog open={isSuccessOpen} onOpenChange={setIsSuccessOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
-            <div className="mx-auto mb-2 grid h-12 w-12 place-items-center rounded-full bg-emerald-100 text-emerald-600">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center border border-foreground text-xl">
               ✓
             </div>
-            <DialogTitle className="text-center">Заказ успешно оформлен</DialogTitle>
+            <DialogTitle
+              className="text-center text-2xl font-light italic"
+              style={{ fontFamily: "var(--font-serif)" }}
+            >
+              Заказ оформлен
+            </DialogTitle>
           </DialogHeader>
           <p className="text-center text-sm text-muted-foreground">
-            Отслеживайте статус заказа на сайте.
+            Отслеживайте статус заказа в личном кабинете
           </p>
-          <p className="text-center text-sm">
-            Номер заказа: <strong>{successOrderId ?? "—"}</strong>
+          <p className="mt-1 text-center text-xs text-muted-foreground">
+            № <span className="font-medium text-foreground">{successOrderId ?? "—"}</span>
           </p>
-          <Button asChild className="w-full">
-            <Link href="/">Перейти на главную страницу</Link>
-          </Button>
+          <div className="mt-4 grid gap-2">
+            <Button asChild className="h-11 w-full text-xs uppercase tracking-[0.15em]">
+              <Link href="/profile">Перейти в профиль</Link>
+            </Button>
+            <Button asChild variant="outline" className="h-11 w-full text-xs uppercase tracking-[0.15em]">
+              <Link href="/">На главную</Link>
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </section>

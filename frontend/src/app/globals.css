@@ -2,24 +2,27 @@
 
 @layer base {
   :root {
-    --background: 220 33% 98%;
-    --foreground: 225 23% 16%;
+    --background: 0 0% 100%;
+    --foreground: 0 0% 8%;
     --card: 0 0% 100%;
-    --card-foreground: 225 23% 16%;
-    --primary: 244 76% 59%;
+    --card-foreground: 0 0% 8%;
+    --primary: 0 0% 8%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 220 22% 94%;
-    --secondary-foreground: 223 23% 20%;
-    --muted: 220 20% 96%;
-    --muted-foreground: 220 12% 46%;
-    --accent: 232 100% 97%;
-    --accent-foreground: 225 23% 16%;
+    --secondary: 30 15% 95%;
+    --secondary-foreground: 0 0% 8%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 48%;
+    --accent: 30 20% 92%;
+    --accent-foreground: 0 0% 8%;
     --destructive: 0 70% 46%;
     --destructive-foreground: 0 0% 100%;
-    --border: 220 20% 90%;
-    --input: 220 20% 90%;
-    --ring: 244 76% 59%;
-    --radius: 0.8rem;
+    --border: 0 0% 88%;
+    --input: 0 0% 88%;
+    --ring: 0 0% 8%;
+    --radius: 0rem;
+
+    --font-sans: "Inter", Arial, sans-serif;
+    --font-serif: "Cormorant", Georgia, serif;
   }
 
   * {
@@ -30,13 +33,18 @@
     min-height: 100vh;
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
-    font-family: Inter, Arial, sans-serif;
+    font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    letter-spacing: 0.01em;
   }
 }
 
 @layer utilities {
+  .font-serif {
+    font-family: var(--font-serif);
+  }
+
   @keyframes toast-in-out {
     0% {
       opacity: 0;

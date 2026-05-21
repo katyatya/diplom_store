@@ -57,19 +57,38 @@ export function CategoryPageClient({ categorySlug }: CategoryPageClientProps) {
   }
 
   return (
-    <section className="grid gap-4">
-      <Link
-        href="/catalog"
-        className="inline-flex w-fit items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
-      >
-        <span aria-hidden="true">←</span>
-        <span>Назад в каталог</span>
-      </Link>
+    <section className="grid gap-8">
+      <div className="flex items-center gap-2 text-xs uppercase tracking-[0.15em] text-muted-foreground">
+        <Link href="/catalog" className="transition-colors hover:text-foreground">
+          Каталог
+        </Link>
+        {resolvedCategory ? (
+          <>
+            <span>/</span>
+            <span className="text-foreground">{resolvedCategory}</span>
+          </>
+        ) : null}
+      </div>
+
       {resolvedCategory ? (
-        <h1 className="text-3xl font-semibold tracking-tight">{resolvedCategory}</h1>
+        <div className="border-b pb-6">
+          <h1
+            className="text-5xl font-light italic"
+            style={{ fontFamily: "var(--font-serif)" }}
+          >
+            {resolvedCategory}
+          </h1>
+          {products.length > 0 ? (
+            <p className="mt-2 text-xs text-muted-foreground">
+              {products.length} {products.length === 1 ? "товар" : products.length < 5 ? "товара" : "товаров"}
+            </p>
+          ) : null}
+        </div>
       ) : null}
-      {status ? <p className="text-sm text-emerald-600">{status}</p> : null}
-      <div className="mx-auto grid w-full max-w-4xl gap-x-6 gap-y-10 sm:grid-cols-2">
+
+      {status ? <p className="text-sm text-muted-foreground">{status}</p> : null}
+
+      <div className="grid gap-x-4 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
         {products.map((product) => {
           const productIdentifier = product.slug || product.id;
           return (
@@ -86,29 +105,29 @@ export function CategoryPageClient({ categorySlug }: CategoryPageClientProps) {
               role="link"
               tabIndex={0}
             >
-              <div className="overflow-hidden bg-muted/30">
+              <div className="relative overflow-hidden bg-muted/30">
                 <img
                   src={getPrimaryProductImage(product)}
                   alt={product.name}
-                  className="h-[420px] w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                  className="h-[400px] w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
                 />
+                <button
+                  type="button"
+                  aria-label="Добавить в избранное"
+                  className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center bg-white/80 text-base text-muted-foreground opacity-0 backdrop-blur-sm transition-all duration-200 hover:text-foreground group-hover:opacity-100"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    void onAddToWishlist(product.id);
+                  }}
+                >
+                  ♡
+                </button>
               </div>
               <div className="mt-3 grid gap-1">
-                <div className="flex items-start justify-between gap-3">
-                  <h2 className="text-sm uppercase tracking-wide">{product.name}</h2>
-                  <button
-                    type="button"
-                    aria-label="Добавить в избранное"
-                    className="text-lg leading-none text-muted-foreground hover:text-foreground"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      void onAddToWishlist(product.id);
-                    }}
-                  >
-                    ♡
-                  </button>
-                </div>
-                <p className="text-sm font-medium">{Number(product.price).toLocaleString("ru-RU")} руб</p>
+                <h2 className="text-xs uppercase tracking-wide">{product.name}</h2>
+                <p className="text-sm font-light text-muted-foreground">
+                  {Number(product.price).toLocaleString("ru-RU")} ₽
+                </p>
               </div>
             </article>
           );
