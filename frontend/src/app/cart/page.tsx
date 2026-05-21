@@ -20,7 +20,8 @@ import { useToast } from "@/components/ui/toast";
 type DisplayCartItem = {
   id: string;
   quantity: number;
-  productId: string;
+  variantId: string;
+  sizeLabel: string;
   product: GuestCartItem["product"];
 };
 
@@ -52,14 +53,16 @@ export default function CartPage() {
     if (authorized) {
       return (cart?.items ?? []).map((item) => ({
         id: item.id,
-        productId: item.productId,
+        variantId: item.variantId,
+        sizeLabel: item.variant.sizeLabel,
         quantity: item.quantity,
-        product: item.product,
+        product: item.variant.product,
       }));
     }
     return guestItems.map((item) => ({
-      id: item.productId,
-      productId: item.productId,
+      id: item.variantId,
+      variantId: item.variantId,
+      sizeLabel: item.sizeLabel,
       quantity: item.quantity,
       product: item.product,
     }));
@@ -70,7 +73,7 @@ export default function CartPage() {
     [items],
   );
 
-  async function onChangeQty(itemId: string, nextQty: number, productId: string) {
+  async function onChangeQty(itemId: string, nextQty: number, variantId: string) {
     if (nextQty < 1) return;
     if (authorized) {
       try {
@@ -82,10 +85,10 @@ export default function CartPage() {
       return;
     }
 
-    setGuestItems(updateGuestCartItem(productId, nextQty));
+    setGuestItems(updateGuestCartItem(variantId, nextQty));
   }
 
-  async function onRemove(itemId: string, productId: string) {
+  async function onRemove(itemId: string, variantId: string) {
     if (authorized) {
       try {
         const updated = await removeCartItem(itemId);
@@ -95,7 +98,7 @@ export default function CartPage() {
       }
       return;
     }
-    setGuestItems(removeGuestCartItem(productId));
+    setGuestItems(removeGuestCartItem(variantId));
   }
 
   return (
@@ -133,11 +136,14 @@ export default function CartPage() {
                 <p className="text-sm text-muted-foreground">
                   {Number(item.product.price).toLocaleString("ru-RU")} руб
                 </p>
+                <p className="text-sm text-muted-foreground">
+                  Размер: {item.sizeLabel === "ONE_SIZE" ? "ONE SIZE" : item.sizeLabel}
+                </p>
                 <div className="flex flex-wrap items-center gap-2">
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => void onChangeQty(item.id, item.quantity - 1, item.productId)}
+                    onClick={() => void onChangeQty(item.id, item.quantity - 1, item.variantId)}
                   >
                   -
                   </Button>
@@ -145,14 +151,14 @@ export default function CartPage() {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => void onChangeQty(item.id, item.quantity + 1, item.productId)}
+                    onClick={() => void onChangeQty(item.id, item.quantity + 1, item.variantId)}
                   >
                   +
                   </Button>
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={() => void onRemove(item.id, item.productId)}
+                    onClick={() => void onRemove(item.id, item.variantId)}
                   >
                     Удалить
                   </Button>

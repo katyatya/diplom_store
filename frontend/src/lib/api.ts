@@ -19,13 +19,22 @@ export type Product = {
   category: string;
   isNew: boolean;
   isActive: boolean;
+  variants: Array<{
+    id: string;
+    sizeLabel: string;
+    isActive: boolean;
+  }>;
 };
 
 export type CartItem = {
   id: string;
-  productId: string;
+  variantId: string;
   quantity: number;
-  product: Product;
+  variant: {
+    id: string;
+    sizeLabel: string;
+    product: Product;
+  };
 };
 
 export type Cart = {
@@ -35,7 +44,8 @@ export type Cart = {
 };
 
 export type GuestCartItem = {
-  productId: string;
+  variantId: string;
+  sizeLabel: string;
   quantity: number;
   product: Product;
 };
@@ -81,7 +91,8 @@ export type Order = {
   createdAt: string;
   items: Array<{
     id: string;
-    productId: string;
+    variantId: string;
+    sizeLabel: string;
     productName: string;
     productPrice: string;
     quantity: number;
@@ -105,7 +116,8 @@ function readGuestCart(): GuestCartItem[] {
       if (!item || typeof item !== "object" || Array.isArray(item)) return false;
       const row = item as Partial<GuestCartItem>;
       return (
-        typeof row.productId === "string" &&
+        typeof row.variantId === "string" &&
+        typeof row.sizeLabel === "string" &&
         typeof row.quantity === "number" &&
         row.quantity > 0 &&
         typeof row.product?.id === "string"
@@ -125,28 +137,28 @@ export function getGuestCartItems(): GuestCartItem[] {
   return readGuestCart();
 }
 
-export function addToGuestCart(product: Product, quantity = 1): GuestCartItem[] {
+export function addToGuestCart(product: Product, variantId: string, sizeLabel: string, quantity = 1): GuestCartItem[] {
   const items = readGuestCart();
-  const existing = items.find((item) => item.productId === product.id);
+  const existing = items.find((item) => item.variantId === variantId);
   if (existing) {
     existing.quantity += quantity;
   } else {
-    items.push({ productId: product.id, quantity, product });
+    items.push({ variantId, sizeLabel, quantity, product });
   }
   writeGuestCart(items);
   return items;
 }
 
-export function updateGuestCartItem(productId: string, quantity: number): GuestCartItem[] {
+export function updateGuestCartItem(variantId: string, quantity: number): GuestCartItem[] {
   const items = readGuestCart().map((item) =>
-    item.productId === productId ? { ...item, quantity } : item,
+    item.variantId === variantId ? { ...item, quantity } : item,
   );
   writeGuestCart(items);
   return items;
 }
 
-export function removeGuestCartItem(productId: string): GuestCartItem[] {
-  const items = readGuestCart().filter((item) => item.productId !== productId);
+export function removeGuestCartItem(variantId: string): GuestCartItem[] {
+  const items = readGuestCart().filter((item) => item.variantId !== variantId);
   writeGuestCart(items);
   return items;
 }
@@ -156,12 +168,17 @@ export function clearGuestCart(): void {
   window.localStorage.removeItem(GUEST_CART_KEY);
 }
 
-export async function addProductToCart(product: Product, quantity = 1): Promise<"guest" | "user"> {
+export async function addProductToCart(
+  product: Product,
+  variantId: string,
+  sizeLabel: string,
+  quantity = 1,
+): Promise<"guest" | "user"> {
   try {
-    await addToCart(product.id, quantity);
+    await addToCart(variantId, quantity);
     return "user";
   } catch {
-    addToGuestCart(product, quantity);
+    addToGuestCart(product, variantId, sizeLabel, quantity);
     return "guest";
   }
 }
@@ -170,7 +187,7 @@ export async function mergeGuestCartToServer(): Promise<void> {
   const items = readGuestCart();
   if (items.length === 0) return;
   for (const item of items) {
-    await addToCart(item.productId, item.quantity);
+    await addToCart(item.variantId, item.quantity);
   }
   clearGuestCart();
 }
@@ -269,12 +286,12 @@ export function fetchCart(): Promise<Cart> {
   return request<Cart>("/cart", undefined, true);
 }
 
-export function addToCart(productId: string, quantity = 1): Promise<Cart> {
+export function addToCart(variantId: string, quantity = 1): Promise<Cart> {
   return request<Cart>(
     "/cart/items",
     {
       method: "POST",
-      body: JSON.stringify({ productId, quantity }),
+      body: JSON.stringify({ variantId, quantity }),
     },
     true,
   );
@@ -421,8 +438,90 @@ export function adminDeleteProduct(productId: string): Promise<{ success: true }
   return request<{ success: true }>(`/admin/products/${productId}`, { method: "DELETE" }, true);
 }
 
+export function adminUpdateProduct(
+  productId: string,
+  payload: Partial<{
+    name: string;
+    description: string;
+    composition: string;
+    price: number;
+    imageUrl: string;
+    category: string;
+    isNew: boolean;
+    isActive: boolean;
+  }>,
+): Promise<Product> {
+  return request<Product>(
+    `/admin/products/${productId}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    },
+    true,
+  );
+}
+
 export function adminFetchOrders(): Promise<Order[]> {
   return request<Order[]>("/admin/orders", undefined, true);
+}
+
+export function adminFetchStylistLooks(): Promise<Outfit[]> {
+  return request<Outfit[]>("/admin/stylist-looks", undefined, true);
+}
+
+export function adminCreateStylistLook(payload: {
+  name: string;
+  description?: string;
+  stylistUserId: string;
+  items: Array<{
+    productId: string;
+    x: number;
+    y: number;
+    zIndex: number;
+    width?: number;
+    height?: number;
+    rotation?: number;
+  }>;
+}): Promise<Outfit> {
+  return request<Outfit>(
+    "/admin/stylist-looks",
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+    true,
+  );
+}
+
+export function adminUpdateStylistLook(
+  lookId: string,
+  payload: Partial<{
+    name: string;
+    description?: string;
+    stylistUserId: string;
+    items: Array<{
+      productId: string;
+      x: number;
+      y: number;
+      zIndex: number;
+      width?: number;
+      height?: number;
+      rotation?: number;
+    }>;
+  }>,
+): Promise<Outfit> {
+  return request<Outfit>(
+    `/admin/stylist-looks/${lookId}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    },
+    true,
+  );
+}
+
+export function adminDeleteStylistLook(lookId: string): Promise<{ success: true }> {
+  return request<{ success: true }>(`/admin/stylist-looks/${lookId}`, { method: "DELETE" }, true);
 }
 
 export function adminUpdateOrderStatus(

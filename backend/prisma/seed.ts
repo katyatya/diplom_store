@@ -3,11 +3,23 @@ import * as bcrypt from "bcrypt";
 
 const prisma = new PrismaClient();
 
+function getSizeLabelsByCategory(category: string): string[] {
+  const normalized = category.trim().toLowerCase();
+  if (normalized.includes("обув")) {
+    return ["35", "36", "37", "38", "39", "40", "41"];
+  }
+  if (normalized.includes("сумк") || normalized.includes("аксессуар")) {
+    return ["ONE_SIZE"];
+  }
+  return ["XS", "S", "M", "L", "XL"];
+}
+
 async function main(): Promise<void> {
   await prisma.orderItem.deleteMany();
   await prisma.order.deleteMany();
   await prisma.wishlistItem.deleteMany();
   await prisma.cartItem.deleteMany();
+  await prisma.productVariant.deleteMany();
   await prisma.cart.deleteMany();
   await prisma.outfit.deleteMany();
   await prisma.banner.deleteMany();
@@ -37,12 +49,12 @@ async function main(): Promise<void> {
 
   const productsData = [
     {
-      name: "Бежевый тренч",
+      name: "Шерстяная куртка-бомбер с пайетками",
       description: "Классический тренч oversize для межсезонья.",
       composition: "63% хлопок, 37% полиэстер",
       price: 12990,
       imageUrl:
-        "https://loremflickr.com/1200/1600/fashion?lock=101, https://loremflickr.com/1200/1600/coat?lock=102, https://loremflickr.com/1200/1600/outerwear?lock=103",
+        "https://cache-limeshop.cdnvideo.ru/limeshop/aa/512f9909cabd51fb90f9332d8523f2f1.jpeg?q=85&w=1000",
       category: "Верхняя одежда",
     },
     {
@@ -55,21 +67,30 @@ async function main(): Promise<void> {
       category: "Платья",
     },
     {
-      name: "Черные прямые джинсы",
+      name: "Белые брюки свободного кроя",
       description: "Высокая посадка, деним средней плотности.",
       composition: "98% хлопок, 2% эластан",
       price: 5490,
       imageUrl:
-        "https://loremflickr.com/1200/1600/jeans?lock=301, https://loremflickr.com/1200/1600/pants?lock=302, https://loremflickr.com/1200/1600/denim?lock=303",
+        "	https://cache-limeshop.cdnvideo.ru/limeshop/aa/8fd1e9b508e55c2a8b650bc38d6afe12.jpeg?q=85&w=1000",
       category: "Брюки",
     },
     {
-      name: "Кроссовки кожаные",
+      name: "Кожаные лоферы с тиснением под крокодила",
       description: "Минималистичный силуэт на каждый день.",
       composition: "Верх: 100% кожа; подкладка: 100% текстиль; подошва: 100% резина",
       price: 8990,
       imageUrl:
-        "https://loremflickr.com/1200/1600/sneakers?lock=401, https://loremflickr.com/1200/1600/shoes?lock=402, https://loremflickr.com/1200/1600/footwear?lock=403",
+        "https://cache-limeshop.cdnvideo.ru/limeshop/aa/c08a67f89eb25f84bdc1e1e228ffdf6b.jpeg?q=85&w=558",
+      category: "Обувь",
+    },
+    {
+      name: "Туфли коричневые с высоким каблуком",
+      description: "Минималистичный силуэт на каждый день.",
+      composition: "Верх: 100% кожа; подкладка: 100% текстиль; подошва: 100% резина",
+      price: 5990,
+      imageUrl:
+        "https://cache-limeshop.cdnvideo.ru/limeshop/aa/ce143621ba8956daa6d8a741a90eb3cb.jpeg?q=85&w=1044",
       category: "Обувь",
     },
     {
@@ -112,6 +133,7 @@ async function main(): Promise<void> {
   ];
 
   const productIds: string[] = [];
+  const productDefaultVariantIds: string[] = [];
   for (const product of productsData) {
     const savedProduct = await prisma.product.create({
       data: {
@@ -121,9 +143,18 @@ async function main(): Promise<void> {
         price: new Prisma.Decimal(product.price),
         imageUrl: product.imageUrl,
         category: product.category,
+        variants: {
+          create: getSizeLabelsByCategory(product.category).map((sizeLabel) => ({ sizeLabel })),
+        },
+      },
+      include: {
+        variants: true,
       },
     });
+    const defaultVariant =
+      savedProduct.variants.find((variant) => variant.sizeLabel === "M") ?? savedProduct.variants[0];
     productIds.push(savedProduct.id);
+    productDefaultVariantIds.push(defaultVariant.id);
   }
 
   await prisma.cart.upsert({
@@ -133,8 +164,8 @@ async function main(): Promise<void> {
       userId: user.id,
       items: {
         create: [
-          { productId: productIds[0], quantity: 1 },
-          { productId: productIds[1], quantity: 2 },
+          { variantId: productDefaultVariantIds[0], quantity: 1 },
+          { variantId: productDefaultVariantIds[1], quantity: 2 },
         ],
       },
     },

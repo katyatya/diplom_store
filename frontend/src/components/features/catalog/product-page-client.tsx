@@ -15,6 +15,7 @@ type ProductPageClientProps = {
 
 export function ProductPageClient({ productSlug }: ProductPageClientProps) {
   const [product, setProduct] = useState<Product | null>(null);
+  const [selectedVariantId, setSelectedVariantId] = useState<string>("");
   const [relatedStylistLooks, setRelatedStylistLooks] = useState<Awaited<
     ReturnType<typeof fetchStylistLooks>
   >>([]);
@@ -32,6 +33,7 @@ export function ProductPageClient({ productSlug }: ProductPageClientProps) {
       .then((data) => {
         setProduct(data);
         setActiveImageIndex(0);
+        setSelectedVariantId(data.variants[0]?.id ?? "");
       })
       .catch(() => setStatus("Товар не найден."));
   }, [productSlug]);
@@ -58,8 +60,13 @@ export function ProductPageClient({ productSlug }: ProductPageClientProps) {
 
   async function handleAddToCart() {
     if (!product) return;
+    const selectedVariant = product.variants.find((variant) => variant.id === selectedVariantId);
+    if (!selectedVariant) {
+      setStatus("Выберите размер.");
+      return;
+    }
     try {
-      await addProductToCart(product, 1);
+      await addProductToCart(product, selectedVariant.id, selectedVariant.sizeLabel, 1);
       showToast("Товар добавлен в корзину");
     } catch {
       setStatus("Не удалось добавить товар в корзину.");
@@ -175,6 +182,23 @@ export function ProductPageClient({ productSlug }: ProductPageClientProps) {
           <div className="grid gap-2">
             <h1 className="text-2xl font-semibold uppercase tracking-wide lg:text-[30px]">{product.name}</h1>
             <p className="text-xl font-semibold">{Number(product.price).toLocaleString("ru-RU")} руб</p>
+          </div>
+          <div className="grid gap-2">
+            <p className="text-sm font-medium">Размер</p>
+            <div className="flex flex-wrap gap-2">
+              {product.variants.map((variant) => (
+                <Button
+                  key={variant.id}
+                  type="button"
+                  variant={selectedVariantId === variant.id ? "default" : "outline"}
+                  size="sm"
+                  className="min-w-14"
+                  onClick={() => setSelectedVariantId(variant.id)}
+                >
+                  {variant.sizeLabel === "ONE_SIZE" ? "ONE SIZE" : variant.sizeLabel}
+                </Button>
+              ))}
+            </div>
           </div>
 
           <Button

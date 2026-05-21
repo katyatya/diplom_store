@@ -21,7 +21,7 @@ export class CartService {
       update: {},
       include: {
         items: {
-          include: { product: true },
+          include: { variant: { include: { product: true } } },
         },
       },
     });
@@ -30,11 +30,12 @@ export class CartService {
   }
 
   async addItem(userId: string, dto: AddCartItemDto) {
-    const product = await this.prisma.product.findUnique({
-      where: { id: dto.productId },
+    const variant = await this.prisma.productVariant.findUnique({
+      where: { id: dto.variantId },
+      include: { product: true },
     });
-    if (!product || !product.isActive) {
-      throw new NotFoundException("Product not found");
+    if (!variant || !variant.isActive || !variant.product.isActive) {
+      throw new NotFoundException("Product variant not found");
     }
 
     const cart = await this.prisma.cart.upsert({
@@ -45,14 +46,14 @@ export class CartService {
 
     await this.prisma.cartItem.upsert({
       where: {
-        cartId_productId: {
+        cartId_variantId: {
           cartId: cart.id,
-          productId: dto.productId,
+          variantId: dto.variantId,
         },
       },
       create: {
         cartId: cart.id,
-        productId: dto.productId,
+        variantId: dto.variantId,
         quantity: dto.quantity,
       },
       update: {
@@ -118,16 +119,23 @@ export class CartService {
     const productIds = Array.from(new Set(items.map(extractProductId).filter(Boolean))) as string[];
 
     for (const productId of productIds) {
+      const defaultVariant = await this.prisma.productVariant.findFirst({
+        where: { productId, isActive: true },
+        orderBy: { createdAt: "asc" },
+      });
+      if (!defaultVariant) {
+        continue;
+      }
       await this.prisma.cartItem.upsert({
         where: {
-          cartId_productId: {
+          cartId_variantId: {
             cartId: cart.id,
-            productId,
+            variantId: defaultVariant.id,
           },
         },
         create: {
           cartId: cart.id,
-          productId,
+          variantId: defaultVariant.id,
           quantity: 1,
         },
         update: {
