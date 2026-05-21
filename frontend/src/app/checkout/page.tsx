@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createOrder, fetchCart, fetchMe } from "@/lib/api";
-import { requestAuthRequired } from "@/lib/auth-required";
+import { AUTH_STATE_CHANGED_EVENT, requestAuthRequired } from "@/lib/auth-required";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -56,14 +56,7 @@ function CheckoutPageInner() {
   const [status, setStatus] = useState("");
   const { showToast } = useToast();
 
-  const orderItemsTotal = cartItems.reduce(
-    (sum, item) => sum + Number(item.variant.product.price) * item.quantity,
-    0,
-  );
-  const deliveryPrice = deliveryType === "CDEK" ? 370 : 0;
-  const totalAmount = orderItemsTotal + deliveryPrice;
-
-  useEffect(() => {
+  async function loadCheckoutState() {
     const fromCart = searchParams.get("fromCart") === "1";
     setHasAccessFromCart(fromCart);
     if (!fromCart) {
@@ -72,21 +65,44 @@ function CheckoutPageInner() {
       return;
     }
 
-    void fetchMe()
-      .then(async (user) => {
-        setAuthorized(true);
-        setProfileEmail(user.email);
-        const cart = await fetchCart();
-        setCartItems(cart.items);
-        if (cart.items.length === 0) {
-          setStatus("Корзина пуста. Добавьте товары перед оформлением заказа.");
-          router.replace("/cart");
-        }
-      })
-      .catch(() => {
-        setAuthorized(false);
-        requestAuthRequired(showToast, "checkout");
-      });
+    try {
+      const user = await fetchMe();
+      setAuthorized(true);
+      setProfileEmail(user.email);
+      const cart = await fetchCart();
+      setCartItems(cart.items);
+      if (cart.items.length === 0) {
+        setStatus("Корзина пуста. Добавьте товары перед оформлением заказа.");
+        router.replace("/cart");
+      } else {
+        setStatus("");
+      }
+    } catch {
+      setAuthorized(false);
+      setProfileEmail("");
+      setCartItems([]);
+      requestAuthRequired(showToast, "checkout");
+    }
+  }
+
+  const orderItemsTotal = cartItems.reduce(
+    (sum, item) => sum + Number(item.variant.product.price) * item.quantity,
+    0,
+  );
+  const deliveryPrice = deliveryType === "CDEK" ? 370 : 0;
+  const totalAmount = orderItemsTotal + deliveryPrice;
+
+  useEffect(() => {
+    void loadCheckoutState();
+
+    function onAuthChanged() {
+      void loadCheckoutState();
+    }
+
+    window.addEventListener(AUTH_STATE_CHANGED_EVENT, onAuthChanged);
+    return () => {
+      window.removeEventListener(AUTH_STATE_CHANGED_EVENT, onAuthChanged);
+    };
   }, [router, searchParams, showToast]);
 
   function formatPhoneInput(rawValue: string): string {
