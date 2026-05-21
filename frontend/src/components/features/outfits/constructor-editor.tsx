@@ -28,7 +28,6 @@ import { requestAuthRequired } from "@/lib/auth-required";
 import { getPrimaryProductImage } from "@/lib/product-images";
 import { OutfitPreview } from "@/components/features/outfits/outfit-preview";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
 
@@ -79,18 +78,24 @@ function toApiPayload(items: CanvasOutfitItem[]): OutfitPlacement[] {
   }));
 }
 
+function isAuthError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  const text = error.message.toLowerCase();
+  return text.includes("401") || text.includes("unauthorized");
+}
+
 export function ConstructorEditor({ initialProductId, mode = "user" }: ConstructorEditorProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
   const [myOutfits, setMyOutfits] = useState<Outfit[]>([]);
+  const [pendingCartOutfitId, setPendingCartOutfitId] = useState<string | null>(null);
   const [stylistUserId, setStylistUserId] = useState<string>("");
   const [canvasItems, setCanvasItems] = useState<CanvasOutfitItem[]>([]);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [editingOutfitId, setEditingOutfitId] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [status, setStatus] = useState("");
   const { showToast } = useToast();
   const dragStateRef = useRef<{
     nodeId: string;
@@ -125,16 +130,18 @@ export function ConstructorEditor({ initialProductId, mode = "user" }: Construct
         const data = await adminFetchStylistLooks();
         setMyOutfits(data);
       } catch {
-        setStatus("Не удалось загрузить образы стилиста.");
+        showToast("Не удалось загрузить образы стилиста.", "error");
       }
       return;
     }
 
     try {
+      await fetchMe();
       const data = await fetchMyOutfits();
       setMyOutfits(data);
     } catch {
-      setStatus("Войдите в аккаунт, чтобы работать с Моими образами.");
+      setMyOutfits([]);
+      showToast("Войдите в аккаунт, чтобы работать с Моими образами.", "error");
     }
   }
 
@@ -366,14 +373,13 @@ export function ConstructorEditor({ initialProductId, mode = "user" }: Construct
       try {
         await fetchMe();
       } catch {
-        setStatus("Войдите в аккаунт, чтобы работать с Моими образами.");
         requestAuthRequired(showToast, "outfitSave");
         return;
       }
     }
 
     if (!name.trim() || canvasItems.length === 0) {
-      setStatus("Введите название и добавьте хотя бы 1 товар на полотно.");
+      showToast("Введите название и добавьте хотя бы 1 товар на полотно.", "error");
       return;
     }
 
@@ -386,7 +392,7 @@ export function ConstructorEditor({ initialProductId, mode = "user" }: Construct
     try {
       if (mode === "adminStylist") {
         if (!stylistUserId) {
-          setStatus("Не удалось определить admin-пользователя.");
+          showToast("Не удалось определить admin-пользователя.", "error");
           return;
         }
         if (editingOutfitId) {
@@ -394,34 +400,35 @@ export function ConstructorEditor({ initialProductId, mode = "user" }: Construct
             ...payload,
             stylistUserId,
           });
-          setStatus("Образ стилиста обновлен.");
+          showToast("Образ стилиста обновлен.");
         } else {
           await adminCreateStylistLook({
             ...payload,
             stylistUserId,
           });
-          setStatus("Образ стилиста сохранен.");
+          showToast("Образ стилиста сохранен.");
         }
       } else {
         if (editingOutfitId) {
           await updateOutfit(editingOutfitId, payload);
-          setStatus("Образ обновлен.");
+          showToast("Образ обновлен.");
         } else {
           await createOutfit(payload);
-          setStatus("Образ сохранен в Моих образах.");
+          showToast("Образ сохранен в Моих образах.");
         }
       }
       resetDraft();
       await loadOutfits();
-    } catch {
-      setStatus(
+    } catch (error) {
+      if (mode === "user" && isAuthError(error)) {
+        requestAuthRequired(showToast, "outfitSave");
+        return;
+      }
+      const message =
         mode === "adminStylist"
           ? "Не удалось сохранить образ стилиста."
-          : "Не удалось сохранить образ. Проверьте авторизацию.",
-      );
-      if (mode === "user") {
-        requestAuthRequired(showToast, "outfitSave");
-      }
+          : "Не удалось сохранить образ.";
+      showToast(message, "error");
     }
   }
 
@@ -429,296 +436,359 @@ export function ConstructorEditor({ initialProductId, mode = "user" }: Construct
     try {
       if (mode === "adminStylist") {
         await adminDeleteStylistLook(outfitId);
-        setStatus("Образ стилиста удален.");
+        showToast("Образ стилиста удален.");
       } else {
         await deleteOutfit(outfitId);
-        setStatus("Образ удален.");
+        showToast("Образ удален.");
       }
       if (editingOutfitId === outfitId) {
         resetDraft();
       }
       await loadOutfits();
     } catch {
-      setStatus("Не удалось удалить образ.");
+      showToast("Не удалось удалить образ.", "error");
     }
   }
 
   async function onAddOutfitToCart(outfitId: string) {
+    if (pendingCartOutfitId === outfitId) return;
+    setPendingCartOutfitId(outfitId);
     try {
       await addOutfitToCart(outfitId);
-      setStatus("Образ добавлен в корзину.");
+      showToast("Образ добавлен в корзину.");
     } catch {
-      setStatus("Не удалось добавить образ в корзину.");
+      showToast("Не удалось добавить образ в корзину.", "error");
+    } finally {
+      setPendingCartOutfitId((current) => (current === outfitId ? null : current));
     }
   }
 
   return (
-    <section className="grid gap-4">
-      <h1 className="text-3xl font-semibold tracking-tight">
-        {mode === "adminStylist" ? "Конструктор образов стилиста" : "Конструктор образов"}
-      </h1>
-      <p className="text-sm text-muted-foreground">
-        {mode === "adminStylist"
-          ? "Собирайте образы в конструкторе и сохраняйте их как образы от стилиста."
-          : 'Добавляйте товары из каталога на полотно, меняйте их размер и позицию, затем сохраняйте образ в "Мои образы".'}
-      </p>
+    <section className="grid gap-8">
+      <div className="border-b pb-6">
+        <p className="mb-2 text-xs uppercase tracking-[0.25em] text-muted-foreground">
+          {mode === "adminStylist" ? "Стилист" : "Персонализация"}
+        </p>
+        <h1
+          className="text-5xl font-light italic"
+          style={{ fontFamily: "var(--font-serif)" }}
+        >
+          {mode === "adminStylist" ? "Образы стилиста" : "Конструктор образов"}
+        </h1>
+        <p className="mt-2 text-xs text-muted-foreground">
+          {mode === "adminStylist"
+            ? "Создавайте образы и публикуйте их в разделе готовых образов."
+            : "Перетащите товары из каталога на полотно, настройте размер и сохраните образ."}
+        </p>
+      </div>
 
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle>{editingOutfitId ? "Редактирование образа" : "Новый образ"}</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-3">
-          <div className="grid max-w-[420px] gap-2">
-            <Input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Название образа"
-            />
-            <Input
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Описание (необязательно)"
-            />
-          </div>
+      {/* Editor card */}
+      <div className="border p-4 sm:p-6">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-xs uppercase tracking-[0.2em]">
+            {editingOutfitId ? "Редактирование образа" : "Новый образ"}
+          </h2>
+          {editingOutfitId ? (
+            <button
+              type="button"
+              onClick={resetDraft}
+              className="text-xs text-muted-foreground underline-offset-2 hover:underline"
+            >
+              Создать новый
+            </button>
+          ) : null}
+        </div>
 
-          <div className="mt-3 grid items-start gap-4 xl:grid-cols-[390px_minmax(460px,1fr)_260px]">
-            <div className="grid max-h-[620px] gap-3 overflow-hidden rounded-lg border p-3">
-              <strong>Товары из каталога</strong>
-              <div className="grid min-h-0 flex-1 gap-3 md:grid-cols-[145px_minmax(0,1fr)]">
-                <aside className="grid content-start gap-2 overflow-auto pr-1">
+        <div className="grid max-w-[420px] gap-3 mb-6">
+          <Input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Название образа"
+            className="h-11"
+          />
+          <Input
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Описание (необязательно)"
+            className="h-11"
+          />
+        </div>
+
+        <div className="grid items-start gap-4 xl:grid-cols-[360px_minmax(430px,1fr)_240px]">
+          {/* Product catalog */}
+          <div className="grid max-h-[620px] gap-3 overflow-hidden border p-3">
+            <p className="text-xs uppercase tracking-[0.15em]">Каталог товаров</p>
+            <div className="grid min-h-0 flex-1 gap-3 md:grid-cols-[130px_minmax(0,1fr)]">
+              <aside className="grid content-start gap-1 overflow-auto">
+                
+                {categories.map((category) => (
                   <button
+                    key={category}
                     type="button"
-                    onClick={() => setSelectedCategory("ALL")}
-                    className={`rounded-md border px-2 py-1 text-left text-sm transition-colors ${
-                      selectedCategory === "ALL"
-                        ? "border-foreground bg-accent/40"
-                        : "hover:bg-accent/30"
+                    onClick={() => setSelectedCategory(category)}
+                    className={`border px-2 py-1.5 text-left text-xs uppercase tracking-wide transition-colors ${
+                      selectedCategory === category
+                        ? "border-foreground bg-foreground text-white"
+                        : "hover:bg-muted/60"
                     }`}
                   >
-                    Все категории
+                    {category}
                   </button>
-                  {categories.map((category) => (
-                    <button
-                      key={category}
-                      type="button"
-                      onClick={() => setSelectedCategory(category)}
-                      className={`rounded-md border px-2 py-1 text-left text-sm transition-colors ${
-                        selectedCategory === category
-                          ? "border-foreground bg-accent/40"
-                          : "hover:bg-accent/30"
-                      }`}
-                    >
-                      {category}
-                    </button>
-                  ))}
-                </aside>
+                ))}
+              </aside>
 
-                <div className="grid auto-rows-[96px] content-start gap-2 overflow-y-scroll pr-1 [max-height:calc(4*96px+3*0.5rem)] [scrollbar-color:hsl(var(--muted-foreground))_hsl(var(--muted))] [scrollbar-gutter:stable] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-muted-foreground/40 [&::-webkit-scrollbar-track]:bg-muted/50">
-                  {visibleProducts.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">В этой категории пока нет товаров.</p>
-                  ) : null}
-                  {visibleProducts.map((product) => (
+              <div className="flex max-h-[420px] flex-col gap-2 overflow-y-auto pr-1 [scrollbar-color:hsl(var(--muted-foreground))_hsl(var(--muted))] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-muted-foreground/40 [&::-webkit-scrollbar-track]:bg-muted/50">
+                {visibleProducts.length === 0 ? (
+                  <p className="py-4 text-xs text-muted-foreground">Нет товаров в этой категории.</p>
+                ) : (
+                  visibleProducts.map((product) => (
                     <article
                       key={product.id}
                       onClick={() => addProductToCanvas(product)}
                       draggable
                       onDragStart={(event) => onProductDragStart(event, product.id)}
-                      className="grid h-full cursor-pointer gap-2 rounded-lg border p-2 transition-colors hover:bg-accent/30 md:grid-cols-[64px_minmax(0,1fr)]"
+                      className="flex cursor-pointer items-center gap-3 border p-2 transition-colors hover:bg-muted/40"
                     >
                       <img
                         src={getPrimaryProductImage(product)}
                         alt={product.name}
-                        className="h-16 w-16 rounded-md border object-cover"
+                        className="h-16 w-16 shrink-0 object-cover"
                       />
-                      <div className="grid gap-2">
-                        <span className="line-clamp-2">{product.name}</span>
-                        <span className="text-sm text-muted-foreground">
-                          {Number(product.price).toLocaleString("ru-RU")} руб
+                      <div className="min-w-0 grid gap-1">
+                        <span className="line-clamp-2 text-xs leading-snug">{product.name}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {Number(product.price).toLocaleString("ru-RU")} ₽
                         </span>
                       </div>
                     </article>
-                  ))}
-                </div>
+                  ))
+                )}
               </div>
             </div>
+          </div>
 
-            <div
-              id="outfit-constructor-canvas"
-              className="relative mx-auto overflow-hidden rounded-lg border bg-card xl:mx-0"
-              style={{ width: CANVAS_WIDTH, height: CANVAS_HEIGHT }}
-              onDragOver={(event) => {
-                event.preventDefault();
-                event.dataTransfer.dropEffect = "copy";
-              }}
-              onDrop={onCanvasDrop}
-              onMouseDown={(event) => {
-                if (event.target === event.currentTarget) {
-                  setSelectedNodeId(null);
-                }
-              }}
-            >
-              {canvasItems
-                .slice()
-                .sort((a, b) => a.zIndex - b.zIndex)
-                .map((item) => {
-                  const product = productsById[item.productId];
-                  if (!product) return null;
-                  return (
-                    <div
-                      key={item.nodeId}
-                      style={{
-                        position: "absolute",
-                        left: item.x,
-                        top: item.y,
-                        width: item.width,
-                        height: item.height,
-                        transform: `rotate(${item.rotation}deg)`,
-                      }}
-                    >
-                      <img
-                        src={getPrimaryProductImage(product)}
-                        alt={product.name}
-                        draggable={false}
-                        onMouseDown={(event) => onCanvasItemMouseDown(event, item)}
-                        onClick={() => setSelectedNodeId(item.nodeId)}
-                        className="block h-full w-full select-none rounded-md object-cover"
-                        style={{
-                          cursor: "grab",
-                          border:
-                            selectedNodeId === item.nodeId
-                              ? "2px solid hsl(var(--foreground))"
-                              : "1px solid hsl(var(--border))",
-                        }}
-                      />
-                      {selectedNodeId === item.nodeId ? (
-                        <button
-                          type="button"
-                          aria-label="Изменить размер"
-                          onMouseDown={(event) => onResizeHandleMouseDown(event, item)}
-                          className="absolute -bottom-2 -right-2 h-[18px] w-[18px] cursor-nwse-resize rounded-sm border border-foreground bg-card"
-                        />
-                      ) : null}
-                      {selectedNodeId === item.nodeId ? (
-                        <button
-                          type="button"
-                          aria-label="Удалить с полотна"
-                          onMouseDown={(event) => {
-                            event.preventDefault();
-                            event.stopPropagation();
-                          }}
-                          onClick={(event) => {
-                            event.preventDefault();
-                            event.stopPropagation();
-                            removeItemFromCanvas(item.nodeId);
-                          }}
-                          className="absolute -right-2 -top-2 inline-flex h-5 w-5 items-center justify-center rounded-full border border-destructive bg-white text-sm font-semibold leading-none text-destructive transition-colors hover:bg-destructive hover:text-red-500"
-                        >
-                          ×
-                        </button>
-                      ) : null}
-                    </div>
-                  );
-                })}
-            </div>
-
-            <aside className="grid gap-2 rounded-lg border p-3">
-              <strong>Настройки</strong>
-              {selectedItem ? (
-                <>
-                  <label className="grid gap-1 text-sm">
-                    Поворот
-                    <input
-                      className="accent-primary"
-                      type="range"
-                      min={-180}
-                      max={180}
-                      value={Math.round(selectedItem.rotation)}
-                      onChange={(event) =>
-                        updateCanvasItem(selectedItem.nodeId, {
-                          rotation: Number(event.target.value),
-                        })
-                      }
-                    />
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    <Button size="sm" variant="secondary" onClick={bringSelectedForward}>
-                      ↑ Слой выше
-                    </Button>
-                    <Button size="sm" variant="secondary" onClick={sendSelectedBackward}>
-                      ↓ Слой ниже
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={removeSelectedItem}>
-                      Удалить с полотна
-                    </Button>
-                  </div>
-                </>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  Выберите товар на полотне для изменения размера и размещения.
+          {/* Canvas */}
+          <div
+            id="outfit-constructor-canvas"
+            className="relative mx-auto overflow-hidden border bg-[#fafafa] xl:mx-0"
+            style={{ width: CANVAS_WIDTH, height: CANVAS_HEIGHT }}
+            onDragOver={(event) => {
+              event.preventDefault();
+              event.dataTransfer.dropEffect = "copy";
+            }}
+            onDrop={onCanvasDrop}
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) {
+                setSelectedNodeId(null);
+              }
+            }}
+          >
+            {canvasItems.length === 0 ? (
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground/50">
+                  Перетащите товары сюда
                 </p>
-              )}
-            </aside>
-          </div>
-
-          <p className="text-sm text-muted-foreground">Товаров на полотне: {canvasItems.length}</p>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              onClick={() => void onSaveOutfit()}
-              className="bg-[#bcefea] font-semibold text-[#0f4f4b] shadow-sm hover:bg-pink-300"
-            >
-              {mode === "adminStylist" ? "Сохранить образ стилиста" : 'Сохранить в "Мои образы"'}
-            </Button>
-            <Button variant="outline" onClick={resetDraft}>
-              Очистить полотно
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle>{mode === "adminStylist" ? "Образы стилиста" : "Мои образы"}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {myOutfits.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              {mode === "adminStylist"
-                ? "Пока нет сохраненных образов стилиста."
-                : "Пока нет сохраненных образов."}
-            </p>
-          ) : null}
-          <div className="grid gap-3">
-            {myOutfits.map((outfit) => (
-              <article
-                key={outfit.id}
-                className="grid gap-3 rounded-lg border p-3 md:grid-cols-[180px_1fr] md:items-start"
-              >
-                <OutfitPreview items={outfit.items} productsById={productsById} width={160} height={220} />
-                <div className="grid gap-1">
-                  <strong>{outfit.name}</strong>
-                  <p className="text-sm text-muted-foreground">{outfit.description || "Без описания"}</p>
-                  <p className="text-sm text-muted-foreground">Позиции: {outfit.items.length}</p>
-                  <div className="flex flex-wrap gap-2">
-                    <Button size="sm" variant="secondary" onClick={() => loadOutfitToCanvas(outfit)}>
-                      Открыть в конструкторе
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => void onDeleteOutfit(outfit.id)}>
-                      Удалить
-                    </Button>
-                    {mode === "user" ? (
-                      <Button size="sm" onClick={() => void onAddOutfitToCart(outfit.id)}>
-                        Добавить в корзину
-                      </Button>
+              </div>
+            ) : null}
+            {canvasItems
+              .slice()
+              .sort((a, b) => a.zIndex - b.zIndex)
+              .map((item) => {
+                const product = productsById[item.productId];
+                if (!product) return null;
+                return (
+                  <div
+                    key={item.nodeId}
+                    style={{
+                      position: "absolute",
+                      left: item.x,
+                      top: item.y,
+                      width: item.width,
+                      height: item.height,
+                      transform: `rotate(${item.rotation}deg)`,
+                    }}
+                  >
+                    <img
+                      src={getPrimaryProductImage(product)}
+                      alt={product.name}
+                      draggable={false}
+                      onMouseDown={(event) => onCanvasItemMouseDown(event, item)}
+                      onClick={() => setSelectedNodeId(item.nodeId)}
+                      className="block h-full w-full select-none object-cover"
+                      style={{
+                        cursor: "grab",
+                        outline:
+                          selectedNodeId === item.nodeId
+                            ? "2px solid hsl(var(--foreground))"
+                            : "none",
+                      }}
+                    />
+                    {selectedNodeId === item.nodeId ? (
+                      <button
+                        type="button"
+                        aria-label="Изменить размер"
+                        onMouseDown={(event) => onResizeHandleMouseDown(event, item)}
+                        className="absolute -bottom-1.5 -right-1.5 h-4 w-4 cursor-nwse-resize bg-foreground"
+                      />
+                    ) : null}
+                    {selectedNodeId === item.nodeId ? (
+                      <button
+                        type="button"
+                        aria-label="Удалить с полотна"
+                        onMouseDown={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                        }}
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          removeItemFromCanvas(item.nodeId);
+                        }}
+                        className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center bg-foreground text-xs text-white transition-opacity hover:opacity-80"
+                      >
+                        ✕
+                      </button>
                     ) : null}
                   </div>
-                </div>
-              </article>
-            ))}
+                );
+              })}
           </div>
-        </CardContent>
-      </Card>
 
-      {status ? <p className="text-sm text-muted-foreground">{status}</p> : null}
+          {/* Settings panel */}
+          <aside className="grid gap-4 border p-4">
+            <p className="text-xs uppercase tracking-[0.15em]">Настройки</p>
+            {selectedItem ? (
+              <>
+                <label className="grid gap-2 text-xs text-muted-foreground">
+                  Поворот: {Math.round(selectedItem.rotation)}°
+                  <input
+                    type="range"
+                    min={-180}
+                    max={180}
+                    value={Math.round(selectedItem.rotation)}
+                    className="w-full accent-foreground"
+                    onChange={(event) =>
+                      updateCanvasItem(selectedItem.nodeId, {
+                        rotation: Number(event.target.value),
+                      })
+                    }
+                  />
+                </label>
+                <div className="grid gap-2">
+                  <button
+                    type="button"
+                    onClick={bringSelectedForward}
+                    className="border px-3 py-2 text-xs uppercase tracking-wide transition-colors hover:bg-muted"
+                  >
+                    ↑ Слой выше
+                  </button>
+                  <button
+                    type="button"
+                    onClick={sendSelectedBackward}
+                    className="border px-3 py-2 text-xs uppercase tracking-wide transition-colors hover:bg-muted"
+                  >
+                    ↓ Слой ниже
+                  </button>
+                  <button
+                    type="button"
+                    onClick={removeSelectedItem}
+                    className="border border-foreground/20 px-3 py-2 text-xs uppercase tracking-wide text-muted-foreground transition-colors hover:border-foreground hover:text-foreground"
+                  >
+                    Удалить
+                  </button>
+                </div>
+              </>
+            ) : (
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                Нажмите на товар на полотне, чтобы изменить его параметры.
+              </p>
+            )}
+          </aside>
+        </div>
+
+        <div className="mt-4 flex items-center justify-between gap-4 border-t pt-4">
+          <p className="text-xs text-muted-foreground">
+            {canvasItems.length === 0 ? "Полотно пустое" : `Товаров на полотне: ${canvasItems.length}`}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              className="h-10 text-xs uppercase tracking-[0.1em]"
+              onClick={resetDraft}
+            >
+              Очистить
+            </Button>
+            <Button
+       
+              className="h-10 text-xs uppercase tracking-[0.1em] bg-[#d6ab9a] text-[#0f4f4b] hover:bg-[#e8cec4]"
+              onClick={() => void onSaveOutfit()}
+            >
+              {mode === "adminStylist" ? "Сохранить образ стилиста" : "Сохранить образ"}
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Saved outfits */}
+      <div className="grid gap-6">
+        <div className="flex items-end justify-between border-b pb-4">
+          <h2
+            className="text-3xl font-light italic"
+            style={{ fontFamily: "var(--font-serif)" }}
+          >
+            {mode === "adminStylist" ? "Образы стилиста" : "Мои образы"}
+          </h2>
+          <span className="text-xs text-muted-foreground">{myOutfits.length} образов</span>
+        </div>
+
+        {myOutfits.length === 0 ? (
+          <p className="py-8 text-center text-sm text-muted-foreground">
+            {mode === "adminStylist" ? "Пока нет образов стилиста." : "Пока нет сохранённых образов."}
+          </p>
+        ) : null}
+
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {myOutfits.map((outfit) => (
+            <article key={outfit.id} className="group border p-4 grid gap-3">
+              <OutfitPreview items={outfit.items} productsById={productsById} width={160} height={220} />
+              <div className="grid gap-1">
+                <p className="text-xs uppercase tracking-wide font-medium">{outfit.name}</p>
+                <p className="text-xs text-muted-foreground">{outfit.description || "Без описания"}</p>
+                <p className="text-xs text-muted-foreground">{outfit.items.length} поз.</p>
+              </div>
+              <div className="flex items-center justify-between gap-2 border-t pt-3">
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    className="border px-3 py-1.5 text-xs uppercase tracking-wide transition-colors hover:bg-muted"
+                    onClick={() => loadOutfitToCanvas(outfit)}
+                  >
+                    Изменить
+                  </button>
+                  {mode === "user" ? (
+                    <button
+                      type="button"
+                      className="border border-black bg-black px-3 py-1.5 text-xs uppercase tracking-wide text-white transition-opacity hover:opacity-80"
+                      onClick={() => void onAddOutfitToCart(outfit.id)}
+                      disabled={pendingCartOutfitId === outfit.id}
+                    >
+                      {pendingCartOutfitId === outfit.id ? "Добавляем..." : "В корзину"}
+                    </button>
+                  ) : null}
+                </div>
+                <button
+                  type="button"
+                  className="shrink-0 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+                  onClick={() => void onDeleteOutfit(outfit.id)}
+                >
+                  Удалить
+                </button>
+              </div>
+            </article>
+          ))}
+        </div>
+      </div>
+
     </section>
   );
 }

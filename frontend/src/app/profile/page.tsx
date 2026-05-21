@@ -1,8 +1,19 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
-import { AuthUser, Order, fetchMe, fetchMyOrders } from "@/lib/api";
+import { AuthUser, Order, fetchMe, fetchMyOrders, logout } from "@/lib/api";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { useToast } from "@/components/ui/toast";
 
 const ORDER_STATUS_LABELS: Record<string, string> = {
   NEW: "Новый",
@@ -31,6 +42,8 @@ export default function ProfilePage() {
   const [isUserLoading, setIsUserLoading] = useState(true);
   const [orders, setOrders] = useState<Order[]>([]);
   const [status, setStatus] = useState("");
+  const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
+  const { showToast } = useToast();
 
   useEffect(() => {
     void (async () => {
@@ -49,6 +62,19 @@ export default function ProfilePage() {
     })();
   }, []);
 
+  async function handleLogout() {
+    try {
+      await logout();
+      setUser(null);
+      setOrders([]);
+      setStatus("Вы вышли из аккаунта.");
+      setIsLogoutDialogOpen(false);
+      showToast("Вы вышли из аккаунта.");
+    } catch {
+      showToast("Не удалось выйти из аккаунта.", "error");
+    }
+  }
+
   return (
     <section className="grid gap-4">
       <h1 className="text-3xl font-semibold tracking-tight">Личный профиль</h1>
@@ -58,9 +84,37 @@ export default function ProfilePage() {
           Загрузка данных профиля...
         </div>
       ) : user ? (
-        <p className="text-sm text-muted-foreground">
-          {user.name || "Пользователь"} ({user.email})
-        </p>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-muted-foreground">
+            {user.name || "Пользователь"} ({user.email})
+          </p>
+          <Dialog open={isLogoutDialogOpen} onOpenChange={setIsLogoutDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm">
+                Выйти из аккаунта
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[400px]">
+              <DialogHeader>
+                <DialogTitle>Подтвердите выход</DialogTitle>
+                <DialogDescription>
+                  Вы действительно хотите выйти из аккаунта?
+                </DialogDescription>
+              </DialogHeader>
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="outline" onClick={() => setIsLogoutDialogOpen(false)}>
+                  Отмена
+                </Button>
+                <Button onClick={() => void handleLogout()}>Выйти</Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
+      ) : null}
+      {!isUserLoading && !user ? (
+        <Link href="/" className="w-fit text-sm text-muted-foreground underline-offset-2 hover:underline">
+          Войти в аккаунт
+        </Link>
       ) : null}
       <h2 className="text-xl font-semibold">Мои заказы</h2>
       {status ? <p className="text-sm text-muted-foreground">{status}</p> : null}

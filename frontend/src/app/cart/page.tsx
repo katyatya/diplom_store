@@ -14,7 +14,7 @@ import {
 } from "@/lib/api";
 import { requestAuthRequired } from "@/lib/auth-required";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { getPrimaryProductImage } from "@/lib/product-images";
 import { useToast } from "@/components/ui/toast";
 
 type DisplayCartItem = {
@@ -30,6 +30,8 @@ export default function CartPage() {
   const [guestItems, setGuestItems] = useState<GuestCartItem[]>([]);
   const [authorized, setAuthorized] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [pendingQtyItemId, setPendingQtyItemId] = useState<string | null>(null);
+  const [pendingRemoveItemId, setPendingRemoveItemId] = useState<string | null>(null);
   const [status, setStatus] = useState("");
   const { showToast } = useToast();
 
@@ -74,120 +76,187 @@ export default function CartPage() {
   );
 
   async function onChangeQty(itemId: string, nextQty: number, variantId: string) {
-    if (nextQty < 1) return;
-    if (authorized) {
-      try {
+    if (nextQty < 1 || pendingQtyItemId === itemId || pendingRemoveItemId === itemId) return;
+    setPendingQtyItemId(itemId);
+    try {
+      if (authorized) {
         const updated = await updateCartItem(itemId, nextQty);
         setCart(updated);
-      } catch {
-        setStatus("Не удалось изменить количество.");
+        return;
       }
-      return;
+      setGuestItems(updateGuestCartItem(variantId, nextQty));
+    } catch {
+      setStatus("Не удалось изменить количество.");
+    } finally {
+      setPendingQtyItemId((current) => (current === itemId ? null : current));
     }
-
-    setGuestItems(updateGuestCartItem(variantId, nextQty));
   }
 
   async function onRemove(itemId: string, variantId: string) {
-    if (authorized) {
-      try {
+    if (pendingRemoveItemId === itemId || pendingQtyItemId === itemId) return;
+    setPendingRemoveItemId(itemId);
+    try {
+      if (authorized) {
         const updated = await removeCartItem(itemId);
         setCart(updated);
-      } catch {
-        setStatus("Не удалось удалить товар из корзины.");
+        return;
       }
-      return;
+      setGuestItems(removeGuestCartItem(variantId));
+    } catch {
+      setStatus("Не удалось удалить товар из корзины.");
+    } finally {
+      setPendingRemoveItemId((current) => (current === itemId ? null : current));
     }
-    setGuestItems(removeGuestCartItem(variantId));
   }
 
   return (
-    <section className="grid gap-4">
-      <h1 className="text-3xl font-semibold tracking-tight">Корзина</h1>
+    <section className="grid gap-8">
+      <div className="border-b pb-6">
+        <h1
+          className="text-5xl font-light italic"
+          style={{ fontFamily: "var(--font-serif)" }}
+        >
+          Корзина
+        </h1>
+      </div>
+
       {status ? <p className="text-sm text-muted-foreground">{status}</p> : null}
-      {!authorized ? (
-        <p className="text-sm text-muted-foreground">
-          Вы в режиме гостя. После входа гостевая корзина будет перенесена в аккаунт.
-        </p>
-      ) : null}
+
       {isLoading ? (
-        <div className="grid gap-3">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-muted-foreground border-r-transparent" />
-            Загружаем товары...
-          </div>
+        <div className="grid gap-6">
           {Array.from({ length: 3 }).map((_, index) => (
-            <Card key={index}>
-              <CardContent className="grid gap-3 p-4">
-                <div className="h-5 w-2/3 animate-pulse rounded bg-muted" />
-                <div className="h-4 w-28 animate-pulse rounded bg-muted" />
-                <div className="h-9 w-56 animate-pulse rounded bg-muted" />
-              </CardContent>
-            </Card>
+            <div key={index} className="flex gap-4 border-b pb-6">
+              <div className="h-32 w-24 animate-pulse bg-muted" />
+              <div className="flex flex-1 flex-col gap-3 pt-1">
+                <div className="h-4 w-1/2 animate-pulse bg-muted" />
+                <div className="h-3 w-1/4 animate-pulse bg-muted" />
+                <div className="h-3 w-1/5 animate-pulse bg-muted" />
+              </div>
+            </div>
           ))}
+        </div>
+      ) : items.length === 0 ? (
+        <div className="py-16 text-center">
+          <p className="mb-6 text-muted-foreground">Корзина пуста</p>
+          <Link
+            href="/catalog"
+            className="inline-flex items-center gap-2 border border-foreground px-8 py-3 text-xs uppercase tracking-[0.2em] transition-colors hover:bg-foreground hover:text-white"
+          >
+            Перейти в каталог
+          </Link>
         </div>
       ) : (
-        <>
-          {items.length === 0 ? <p className="text-sm text-muted-foreground">Корзина пуста.</p> : null}
-          {items.map((item) => (
-            <Card key={item.id}>
-              <CardContent className="grid gap-3 p-4">
-                <h3 className="font-medium">{item.product.name}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {Number(item.product.price).toLocaleString("ru-RU")} руб
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Размер: {item.sizeLabel === "ONE_SIZE" ? "ONE SIZE" : item.sizeLabel}
-                </p>
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => void onChangeQty(item.id, item.quantity - 1, item.variantId)}
-                  >
-                  -
-                  </Button>
-                  <span className="text-sm">Количество: {item.quantity}</span>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => void onChangeQty(item.id, item.quantity + 1, item.variantId)}
-                  >
-                  +
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
+        <div className="grid gap-8 lg:grid-cols-[1fr_360px] lg:items-start">
+          {/* Items list */}
+          <div className="grid gap-0">
+            {items.map((item) => (
+              <div key={item.id} className="grid grid-cols-[96px_1fr] gap-4 border-b py-6 sm:grid-cols-[112px_1fr]">
+                <Link href={`/catalog/product/${item.product.slug || item.product.id}`}>
+                  <img
+                    src={getPrimaryProductImage(item.product)}
+                    alt={item.product.name}
+                    className="h-32 w-full object-cover sm:h-36"
+                  />
+                </Link>
+                <div className="flex flex-col justify-between gap-2">
+                  <div>
+                    <Link
+                      href={`/catalog/product/${item.product.slug || item.product.id}`}
+                      className="text-xs uppercase tracking-wide hover:underline"
+                    >
+                      {item.product.name}
+                    </Link>
+                    <p className="mt-1 text-xs text-muted-foreground  ">
+                      Размер: {item.sizeLabel === "ONE_SIZE" ? "ONE SIZE" : item.sizeLabel}
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-0 border">
+                      <button
+                        type="button"
+                        aria-label="Уменьшить количество"
+                        className="flex h-8 w-8 items-center justify-center text-sm transition-colors hover:bg-muted"
+                        onClick={() => void onChangeQty(item.id, item.quantity - 1, item.variantId)}
+                        disabled={pendingQtyItemId === item.id || pendingRemoveItemId === item.id}
+                      >
+                        −
+                      </button>
+                      <span className="flex h-8 w-8 items-center justify-center border-x text-sm">
+                        {pendingQtyItemId === item.id ? (
+                          <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-muted-foreground/40 border-t-muted-foreground" />
+                        ) : (
+                          item.quantity
+                        )}
+                      </span>
+                      <button
+                        type="button"
+                        aria-label="Увеличить количество"
+                        className="flex h-8 w-8 items-center justify-center text-sm transition-colors hover:bg-muted"
+                        onClick={() => void onChangeQty(item.id, item.quantity + 1, item.variantId)}
+                        disabled={pendingQtyItemId === item.id || pendingRemoveItemId === item.id}
+                      >
+                        +
+                      </button>
+                    </div>
+                    <p className="text-sm font-light">
+                      {(Number(item.product.price) * item.quantity).toLocaleString("ru-RU")} ₽
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    className="w-fit text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
                     onClick={() => void onRemove(item.id, item.variantId)}
+                    disabled={pendingQtyItemId === item.id || pendingRemoveItemId === item.id}
                   >
-                    Удалить
-                  </Button>
+                    {pendingRemoveItemId === item.id ? "Удаление..." : "Удалить"}
+                  </button>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </>
-      )}
-      <p>
-        <strong>Итого: {total.toLocaleString("ru-RU")} руб</strong>
-      </p>
-      {items.length > 0 && !isLoading ? (
-        <div className="grid gap-2 rounded-lg border p-3 sm:max-w-[420px]">
-          <p className="text-sm text-muted-foreground">Готовы завершить покупку?</p>
-          {authorized ? (
-            <Button asChild className="w-full">
-              <Link href="/checkout?fromCart=1">Перейти к оформлению</Link>
-            </Button>
-          ) : (
-            <Button
-              className="w-full"
-              onClick={() => requestAuthRequired(showToast, "checkout")}
-            >
-              Перейти к оформлению
-            </Button>
-          )}
+              </div>
+            ))}
+          </div>
+
+          {/* Order summary */}
+          <div className="border p-6">
+            <h2 className="mb-4 text-xs uppercase tracking-[0.2em]">Итого</h2>
+            <div className="grid gap-2 border-b pb-4">
+              {items.map((item) => (
+                <div key={item.id} className="flex justify-between gap-3 text-sm">
+                  <span className="truncate text-muted-foreground">
+                    {item.product.name} × {item.quantity}
+                  </span>
+                  <span className="shrink-0">
+                    {(Number(item.product.price) * item.quantity).toLocaleString("ru-RU")} ₽
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 flex items-center justify-between">
+              <span className="text-sm font-medium uppercase tracking-wide">Сумма</span>
+              <span className="text-lg font-light">{total.toLocaleString("ru-RU")} ₽</span>
+            </div>
+            <div className="mt-6 grid gap-2">
+              {authorized ? (
+                <Button asChild className="h-12 w-full text-xs uppercase tracking-[0.15em] bg-[#d6ab9a] hover:bg-[#e8cec4]">
+                  <Link href="/checkout?fromCart=1">Оформить заказ</Link>
+                </Button>
+              ) : (
+                <Button
+                  className="h-12 w-full text-xs uppercase tracking-[0.15em] bg-[#d6ab9a] hover:bg-[#e8cec4]"
+                  onClick={() => requestAuthRequired(showToast, "checkout")}
+                >
+                  Оформить заказ
+                </Button>
+              )}
+              <Link
+                href="/catalog"
+                className="block text-center text-xs text-muted-foreground underline-offset-2 hover:underline"
+              >
+                Продолжить покупки
+              </Link>
+            </div>
+          </div>
         </div>
-      ) : null}
+      )}
     </section>
   );
 }

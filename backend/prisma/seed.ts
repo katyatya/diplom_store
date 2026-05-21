@@ -19,6 +19,8 @@ async function main(): Promise<void> {
   await prisma.order.deleteMany();
   await prisma.wishlistItem.deleteMany();
   await prisma.cartItem.deleteMany();
+  await prisma.productCollection.deleteMany();
+  await prisma.collection.deleteMany();
   await prisma.productVariant.deleteMany();
   await prisma.cart.deleteMany();
   await prisma.outfit.deleteMany();
@@ -156,6 +158,33 @@ async function main(): Promise<void> {
     productIds.push(savedProduct.id);
     productDefaultVariantIds.push(defaultVariant.id);
   }
+
+  const summerCollection = await prisma.collection.create({
+    data: {
+      title: "Summer Co Create",
+      slug: "summer-co-create",
+      products: {
+        create: [
+          { productId: productIds[0] },
+          { productId: productIds[1] },
+          { productId: productIds[2] },
+          { productId: productIds[4] },
+        ],
+      },
+    },
+  });
+
+  await prisma.banner.create({
+    data: {
+      title: "Befree Co:Create",
+      subtitle: "Лимитированная капсула сезона",
+      imageUrl:
+        "https://cache-limeshop.cdnvideo.ru/limeshop/aa/512f9909cabd51fb90f9332d8523f2f1.jpeg?q=85&w=1000",
+      section: "home",
+      collectionId: summerCollection.id,
+      isActive: true,
+    },
+  });
 
   await prisma.cart.upsert({
     where: { userId: user.id },

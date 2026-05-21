@@ -111,7 +111,12 @@ export class AdminService {
   }
 
   listBanners() {
-    return this.prisma.banner.findMany({ orderBy: { createdAt: "desc" } });
+    return this.prisma.banner.findMany({
+      include: {
+        collection: { select: { id: true, slug: true, title: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    });
   }
 
   createBanner(dto: CreateBannerDto) {
@@ -121,7 +126,11 @@ export class AdminService {
         subtitle: dto.subtitle,
         imageUrl: dto.imageUrl,
         section: dto.section ?? "home",
+        collectionId: dto.collectionId,
         isActive: dto.isActive ?? true,
+      },
+      include: {
+        collection: { select: { id: true, slug: true, title: true } },
       },
     });
   }
@@ -132,6 +141,9 @@ export class AdminService {
     return this.prisma.banner.update({
       where: { id: bannerId },
       data: dto,
+      include: {
+        collection: { select: { id: true, slug: true, title: true } },
+      },
     });
   }
 

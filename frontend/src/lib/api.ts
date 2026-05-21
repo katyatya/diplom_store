@@ -73,6 +73,10 @@ export type Banner = {
   subtitle: string | null;
   imageUrl: string;
   section: string;
+  collection: {
+    slug: string;
+    title: string;
+  } | null;
   isActive: boolean;
 };
 
@@ -261,10 +265,15 @@ export function logout(): Promise<{ success: true }> {
   return request("/auth/logout", { method: "POST" }, true, false);
 }
 
-export function fetchProducts(params?: { category?: string; isNew?: boolean }): Promise<Product[]> {
+export function fetchProducts(params?: {
+  category?: string;
+  isNew?: boolean;
+  collectionSlug?: string;
+}): Promise<Product[]> {
   const query = new URLSearchParams();
   if (params?.category) query.set("category", params.category);
   if (params?.isNew !== undefined) query.set("isNew", String(params.isNew));
+  if (params?.collectionSlug) query.set("collectionSlug", params.collectionSlug);
   const suffix = query.toString() ? `?${query.toString()}` : "";
   return request<Product[]>(`/catalog/products${suffix}`);
 }
