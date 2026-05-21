@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { Product, addToWishlist, fetchProducts } from "@/lib/api";
+import { Product, addToWishlist, fetchProducts, fetchWishlist } from "@/lib/api";
 import { getPrimaryProductImage } from "@/lib/product-images";
 
 type CollectionPageClientProps = {
@@ -22,6 +22,7 @@ export function CollectionPageClient({ collectionSlug }: CollectionPageClientPro
   const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [status, setStatus] = useState("");
+  const [wishlistProductIds, setWishlistProductIds] = useState<Set<string>>(new Set());
 
   const collectionTitle = useMemo(
     () => prettifyCollectionTitle(decodeURIComponent(collectionSlug)),
@@ -42,9 +43,20 @@ export function CollectionPageClient({ collectionSlug }: CollectionPageClientPro
     })();
   }, [collectionSlug]);
 
+  useEffect(() => {
+    void fetchWishlist()
+      .then((items) => {
+        setWishlistProductIds(new Set(items.map((item) => item.product.id)));
+      })
+      .catch(() => {
+        setWishlistProductIds(new Set());
+      });
+  }, []);
+
   async function onAddToWishlist(productId: string) {
     try {
-      await addToWishlist(productId);
+      const updatedWishlist = await addToWishlist(productId);
+      setWishlistProductIds(new Set(updatedWishlist.map((item) => item.product.id)));
       setStatus("Товар добавлен в избранное.");
     } catch {
       setStatus("Для добавления в избранное требуется вход.");
@@ -95,7 +107,7 @@ export function CollectionPageClient({ collectionSlug }: CollectionPageClientPro
                   <button
                     type="button"
                     aria-label="Добавить в избранное"
-                    className="text-lg leading-none text-muted-foreground hover:text-foreground"
+                    className={`text-lg leading-none ${wishlistProductIds.has(product.id) ? "text-red-500" : "text-muted-foreground hover:text-foreground"}`}
                     onClick={(event) => {
                       event.stopPropagation();
                       void onAddToWishlist(product.id);

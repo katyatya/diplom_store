@@ -84,20 +84,16 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* Feature strips */}
       <section className="-mx-4 sm:-mx-6">
-        <div className="grid gap-px border-y sm:grid-cols-3">
-          {[
-            { label: "Бесплатная доставка", sub: "в магазины" },
-            { label: "Примерка дома", sub: "14 дней на возврат" },
-            { label: "Образы от стилиста", sub: "покупайте готовые образы" },
-          ].map((item) => (
-            <div key={item.label} className="grid gap-1 px-6 py-8 text-center">
-              <p className="text-sm font-medium uppercase tracking-[0.1em]">{item.label}</p>
-              <p className="text-xs text-muted-foreground">{item.sub}</p>
-            </div>
-          ))}
-        </div>
+        <Link
+          href="/catalog"
+          className="group flex items-center justify-between border-y px-6 py-10 transition-colors hover:bg-muted/20 sm:px-10"
+        >
+     
+          <span className="text-m uppercase tracking-[0.2em] text-muted-foreground transition-transform group-hover:translate-x-1">
+            Смотреть каталог →
+          </span>
+        </Link>
       </section>
 
       {/* Stylist looks promo */}

@@ -171,7 +171,7 @@ export default function CartPage() {
                     >
                       {item.product.name}
                     </Link>
-                    <p className="mt-1 text-xs text-muted-foreground">
+                    <p className="mt-1 text-xs  text-[#0f4f4b] ">
                       Размер: {item.sizeLabel === "ONE_SIZE" ? "ONE SIZE" : item.sizeLabel}
                     </p>
                   </div>

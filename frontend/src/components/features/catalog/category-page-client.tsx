@@ -7,6 +7,7 @@ import {
   Product,
   addToWishlist,
   fetchCategories,
+  fetchWishlist,
   fetchProducts,
 } from "@/lib/api";
 import { findCategoryBySlug } from "@/lib/catalog-categories";
@@ -21,6 +22,7 @@ export function CategoryPageClient({ categorySlug }: CategoryPageClientProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [resolvedCategory, setResolvedCategory] = useState<string>("");
   const [status, setStatus] = useState("");
+  const [wishlistProductIds, setWishlistProductIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!categorySlug) return;
@@ -47,9 +49,20 @@ export function CategoryPageClient({ categorySlug }: CategoryPageClientProps) {
     })();
   }, [categorySlug]);
 
+  useEffect(() => {
+    void fetchWishlist()
+      .then((items) => {
+        setWishlistProductIds(new Set(items.map((item) => item.product.id)));
+      })
+      .catch(() => {
+        setWishlistProductIds(new Set());
+      });
+  }, []);
+
   async function onAddToWishlist(productId: string) {
     try {
-      await addToWishlist(productId);
+      const updatedWishlist = await addToWishlist(productId);
+      setWishlistProductIds(new Set(updatedWishlist.map((item) => item.product.id)));
       setStatus("Товар добавлен в избранное.");
     } catch {
       setStatus("Для добавления в избранное требуется вход.");
@@ -114,7 +127,7 @@ export function CategoryPageClient({ categorySlug }: CategoryPageClientProps) {
                 <button
                   type="button"
                   aria-label="Добавить в избранное"
-                  className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center bg-white/80 text-base text-muted-foreground opacity-0 backdrop-blur-sm transition-all duration-200 hover:text-foreground group-hover:opacity-100"
+                  className={`absolute right-3 top-3 flex h-8 w-8 items-center justify-center bg-white/80 text-base backdrop-blur-sm transition-all duration-200 group-hover:opacity-100 ${wishlistProductIds.has(product.id) ? "text-red-500 opacity-100" : "text-muted-foreground opacity-0 hover:text-foreground"}`}
                   onClick={(event) => {
                     event.stopPropagation();
                     void onAddToWishlist(product.id);

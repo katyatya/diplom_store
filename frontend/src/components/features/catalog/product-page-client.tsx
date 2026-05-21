@@ -194,9 +194,13 @@ export function ProductPageClient({ productSlug }: ProductPageClientProps) {
                 <Button
                   key={variant.id}
                   type="button"
-                  variant={selectedVariantId === variant.id ? "default" : "outline"}
+                  variant="outline"
                   size="sm"
-                  className="min-w-14"
+                  className={
+                    selectedVariantId === variant.id
+                      ? "min-w-14 border-[#d6ab9a] bg-[#f8eee9] hover:bg-[#f8eee9]"
+                      : "min-w-14"
+                  }
                   onClick={() => setSelectedVariantId(variant.id)}
                 >
                   {variant.sizeLabel === "ONE_SIZE" ? "ONE SIZE" : variant.sizeLabel}
