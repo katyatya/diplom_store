@@ -226,7 +226,7 @@ function CheckoutPageInner() {
       <div className="grid gap-8 lg:grid-cols-[1fr_380px] lg:items-start">
         {/* Form */}
         <div>
-          <form onSubmit={(e) => void onSubmit(e)} className="grid gap-6">
+          <form id="checkout-form" onSubmit={(e) => void onSubmit(e)} className="grid gap-6">
             <fieldset className="grid gap-4">
               <legend className="mb-2 text-xs uppercase tracking-[0.2em]">Данные получателя</legend>
               <div className="grid gap-1">
@@ -333,14 +333,6 @@ function CheckoutPageInner() {
               ) : null}
             </fieldset>
 
-            {status ? <p className="text-xs text-muted-foreground">{status}</p> : null}
-
-            <Button
-              type="submit"
-              className="h-12 w-full text-xs uppercase tracking-[0.2em]"
-            >
-              Подтвердить заказ
-            </Button>
           </form>
         </div>
 
@@ -388,6 +380,17 @@ function CheckoutPageInner() {
             </div>
           ) : null}
         </div>
+      </div>
+
+      <div className="grid gap-3 border-t pt-6">
+        {status ? <p className="text-xs text-muted-foreground">{status}</p> : null}
+        <Button
+          type="submit"
+          form="checkout-form"
+          className="h-12 w-full text-xs uppercase tracking-[0.2em]"
+        >
+          Подтвердить заказ
+        </Button>
       </div>
 
       <Dialog open={isSuccessOpen} onOpenChange={setIsSuccessOpen}>

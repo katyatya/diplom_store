@@ -11,6 +11,7 @@ type WishlistItem = Awaited<ReturnType<typeof fetchWishlist>>[number];
 export default function WishlistPage() {
   const [items, setItems] = useState<WishlistItem[]>([]);
   const [status, setStatus] = useState("");
+  const [pendingCartProductId, setPendingCartProductId] = useState<string | null>(null);
   const { showToast } = useToast();
 
   async function load() {
@@ -36,17 +37,21 @@ export default function WishlistPage() {
   }
 
   async function onMoveToCart(productId: string) {
+    if (pendingCartProductId === productId) return;
     const item = items.find((entry) => entry.product.id === productId);
     const defaultVariant = item?.product.variants[0];
     if (!defaultVariant) {
       showToast("Для товара не настроены размеры.", "error");
       return;
     }
+    setPendingCartProductId(productId);
     try {
       await addToCart(defaultVariant.id, 1);
       showToast("Товар добавлен в корзину");
     } catch {
       showToast("Не удалось добавить в корзину.", "error");
+    } finally {
+      setPendingCartProductId((current) => (current === productId ? null : current));
     }
   }
 
@@ -119,8 +124,9 @@ export default function WishlistPage() {
                 type="button"
                 className="w-full border border-foreground py-2 text-xs uppercase tracking-[0.15em] transition-colors hover:bg-foreground hover:text-white"
                 onClick={() => void onMoveToCart(item.product.id)}
+                disabled={pendingCartProductId === item.product.id}
               >
-                В корзину
+                {pendingCartProductId === item.product.id ? "Добавляем..." : "В корзину"}
               </button>
             </div>
           </div>

@@ -16,6 +16,7 @@ type ProductPageClientProps = {
 export function ProductPageClient({ productSlug }: ProductPageClientProps) {
   const [product, setProduct] = useState<Product | null>(null);
   const [selectedVariantId, setSelectedVariantId] = useState<string>("");
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [relatedStylistLooks, setRelatedStylistLooks] = useState<Awaited<
     ReturnType<typeof fetchStylistLooks>
   >>([]);
@@ -59,18 +60,21 @@ export function ProductPageClient({ productSlug }: ProductPageClientProps) {
   }, [product]);
 
   async function handleAddToCart() {
-    if (!product) return;
+    if (!product || isAddingToCart) return;
     const selectedVariant = product.variants.find((variant) => variant.id === selectedVariantId);
     if (!selectedVariant) {
       setStatus("Выберите размер.");
       return;
     }
+    setIsAddingToCart(true);
     try {
       await addProductToCart(product, selectedVariant.id, selectedVariant.sizeLabel, 1);
       showToast("Товар добавлен в корзину");
     } catch {
       setStatus("Не удалось добавить товар в корзину.");
       showToast("Не удалось добавить товар в корзину.", "error");
+    } finally {
+      setIsAddingToCart(false);
     }
   }
 
@@ -204,8 +208,9 @@ export function ProductPageClient({ productSlug }: ProductPageClientProps) {
           <Button
             className="h-11 w-full rounded-none bg-black text-sm text-white hover:bg-black/90"
             onClick={() => void handleAddToCart()}
+            disabled={isAddingToCart}
           >
-            ДОБАВИТЬ В КОРЗИНУ
+            {isAddingToCart ? "ДОБАВЛЯЕМ..." : "ДОБАВИТЬ В КОРЗИНУ"}
           </Button>
           <Button asChild variant="outline" className="h-11 w-full rounded-none text-sm">
             <Link href={`/outfit-builder?productId=${product.id}`}>СОБРАТЬ ОБРАЗ</Link>

@@ -78,18 +78,24 @@ function toApiPayload(items: CanvasOutfitItem[]): OutfitPlacement[] {
   }));
 }
 
+function isAuthError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  const text = error.message.toLowerCase();
+  return text.includes("401") || text.includes("unauthorized");
+}
+
 export function ConstructorEditor({ initialProductId, mode = "user" }: ConstructorEditorProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
   const [myOutfits, setMyOutfits] = useState<Outfit[]>([]);
+  const [pendingCartOutfitId, setPendingCartOutfitId] = useState<string | null>(null);
   const [stylistUserId, setStylistUserId] = useState<string>("");
   const [canvasItems, setCanvasItems] = useState<CanvasOutfitItem[]>([]);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [editingOutfitId, setEditingOutfitId] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [status, setStatus] = useState("");
   const { showToast } = useToast();
   const dragStateRef = useRef<{
     nodeId: string;
@@ -124,16 +130,18 @@ export function ConstructorEditor({ initialProductId, mode = "user" }: Construct
         const data = await adminFetchStylistLooks();
         setMyOutfits(data);
       } catch {
-        setStatus("Не удалось загрузить образы стилиста.");
+        showToast("Не удалось загрузить образы стилиста.", "error");
       }
       return;
     }
 
     try {
+      await fetchMe();
       const data = await fetchMyOutfits();
       setMyOutfits(data);
     } catch {
-      setStatus("Войдите в аккаунт, чтобы работать с Моими образами.");
+      setMyOutfits([]);
+      showToast("Войдите в аккаунт, чтобы работать с Моими образами.", "error");
     }
   }
 
@@ -365,14 +373,13 @@ export function ConstructorEditor({ initialProductId, mode = "user" }: Construct
       try {
         await fetchMe();
       } catch {
-        setStatus("Войдите в аккаунт, чтобы работать с Моими образами.");
         requestAuthRequired(showToast, "outfitSave");
         return;
       }
     }
 
     if (!name.trim() || canvasItems.length === 0) {
-      setStatus("Введите название и добавьте хотя бы 1 товар на полотно.");
+      showToast("Введите название и добавьте хотя бы 1 товар на полотно.", "error");
       return;
     }
 
@@ -385,7 +392,7 @@ export function ConstructorEditor({ initialProductId, mode = "user" }: Construct
     try {
       if (mode === "adminStylist") {
         if (!stylistUserId) {
-          setStatus("Не удалось определить admin-пользователя.");
+          showToast("Не удалось определить admin-пользователя.", "error");
           return;
         }
         if (editingOutfitId) {
@@ -393,34 +400,35 @@ export function ConstructorEditor({ initialProductId, mode = "user" }: Construct
             ...payload,
             stylistUserId,
           });
-          setStatus("Образ стилиста обновлен.");
+          showToast("Образ стилиста обновлен.");
         } else {
           await adminCreateStylistLook({
             ...payload,
             stylistUserId,
           });
-          setStatus("Образ стилиста сохранен.");
+          showToast("Образ стилиста сохранен.");
         }
       } else {
         if (editingOutfitId) {
           await updateOutfit(editingOutfitId, payload);
-          setStatus("Образ обновлен.");
+          showToast("Образ обновлен.");
         } else {
           await createOutfit(payload);
-          setStatus("Образ сохранен в Моих образах.");
+          showToast("Образ сохранен в Моих образах.");
         }
       }
       resetDraft();
       await loadOutfits();
-    } catch {
-      setStatus(
+    } catch (error) {
+      if (mode === "user" && isAuthError(error)) {
+        requestAuthRequired(showToast, "outfitSave");
+        return;
+      }
+      const message =
         mode === "adminStylist"
           ? "Не удалось сохранить образ стилиста."
-          : "Не удалось сохранить образ. Проверьте авторизацию.",
-      );
-      if (mode === "user") {
-        requestAuthRequired(showToast, "outfitSave");
-      }
+          : "Не удалось сохранить образ.";
+      showToast(message, "error");
     }
   }
 
@@ -428,26 +436,30 @@ export function ConstructorEditor({ initialProductId, mode = "user" }: Construct
     try {
       if (mode === "adminStylist") {
         await adminDeleteStylistLook(outfitId);
-        setStatus("Образ стилиста удален.");
+        showToast("Образ стилиста удален.");
       } else {
         await deleteOutfit(outfitId);
-        setStatus("Образ удален.");
+        showToast("Образ удален.");
       }
       if (editingOutfitId === outfitId) {
         resetDraft();
       }
       await loadOutfits();
     } catch {
-      setStatus("Не удалось удалить образ.");
+      showToast("Не удалось удалить образ.", "error");
     }
   }
 
   async function onAddOutfitToCart(outfitId: string) {
+    if (pendingCartOutfitId === outfitId) return;
+    setPendingCartOutfitId(outfitId);
     try {
       await addOutfitToCart(outfitId);
-      setStatus("Образ добавлен в корзину.");
+      showToast("Образ добавлен в корзину.");
     } catch {
-      setStatus("Не удалось добавить образ в корзину.");
+      showToast("Не удалось добавить образ в корзину.", "error");
+    } finally {
+      setPendingCartOutfitId((current) => (current === outfitId ? null : current));
     }
   }
 
@@ -758,8 +770,9 @@ export function ConstructorEditor({ initialProductId, mode = "user" }: Construct
                       type="button"
                       className="border border-black bg-black px-3 py-1.5 text-xs uppercase tracking-wide text-white transition-opacity hover:opacity-80"
                       onClick={() => void onAddOutfitToCart(outfit.id)}
+                      disabled={pendingCartOutfitId === outfit.id}
                     >
-                      В корзину
+                      {pendingCartOutfitId === outfit.id ? "Добавляем..." : "В корзину"}
                     </button>
                   ) : null}
                 </div>
@@ -776,7 +789,6 @@ export function ConstructorEditor({ initialProductId, mode = "user" }: Construct
         </div>
       </div>
 
-      {status ? <p className="text-sm text-muted-foreground">{status}</p> : null}
     </section>
   );
 }

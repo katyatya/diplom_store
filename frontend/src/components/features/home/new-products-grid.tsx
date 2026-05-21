@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { Product, addProductToCart } from "@/lib/api";
 import { getPrimaryProductImage } from "@/lib/product-images";
 import { useToast } from "@/components/ui/toast";
@@ -11,19 +12,24 @@ type NewProductsGridProps = {
 
 export function NewProductsGrid({ products }: NewProductsGridProps) {
   const { showToast } = useToast();
+  const [pendingProductId, setPendingProductId] = useState<string | null>(null);
 
   async function handleAddToCart(product: Product, event: React.MouseEvent) {
     event.preventDefault();
+    if (pendingProductId === product.id) return;
     const defaultVariant = product.variants[0];
     if (!defaultVariant) {
       showToast("Для товара не настроены размеры.", "error");
       return;
     }
+    setPendingProductId(product.id);
     try {
       await addProductToCart(product, defaultVariant.id, defaultVariant.sizeLabel, 1);
       showToast("Товар добавлен в корзину");
     } catch {
       showToast("Не удалось добавить товар в корзину.", "error");
+    } finally {
+      setPendingProductId((current) => (current === product.id ? null : current));
     }
   }
 
@@ -54,8 +60,9 @@ export function NewProductsGrid({ products }: NewProductsGridProps) {
               aria-label="Добавить в корзину"
               className="absolute inset-x-0 bottom-0 translate-y-full bg-black/90 py-3 text-xs uppercase tracking-[0.15em] text-white transition-transform duration-300 group-hover:translate-y-0"
               onClick={(e) => void handleAddToCart(product, e)}
+              disabled={pendingProductId === product.id}
             >
-              В корзину
+              {pendingProductId === product.id ? "Добавляем..." : "В корзину"}
             </button>
           </div>
           <div className="mt-3 grid gap-1">

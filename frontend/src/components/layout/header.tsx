@@ -2,9 +2,19 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Heart, ShoppingBag, User } from "lucide-react";
-import { type AuthUser, fetchMe } from "@/lib/api";
+import { Heart, LogOut, ShoppingBag, User } from "lucide-react";
+import { type AuthUser, fetchMe, logout } from "@/lib/api";
 import { AuthDialog } from "@/components/features/auth/auth-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/toast";
 
 const navLinks: Array<{ href: string; label: string }> = [
   { href: "/catalog", label: "Каталог" },
@@ -15,12 +25,25 @@ const navLinks: Array<{ href: string; label: string }> = [
 export function Header() {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
+  const { showToast } = useToast();
 
   useEffect(() => {
     void fetchMe()
       .then(setUser)
       .catch(() => setUser(null));
   }, []);
+
+  async function handleLogout() {
+    try {
+      await logout();
+      setUser(null);
+      setIsLogoutDialogOpen(false);
+      showToast("Вы вышли из аккаунта.");
+    } catch {
+      showToast("Не удалось выйти из аккаунта.", "error");
+    }
+  }
 
   return (
     <header className="sticky top-0 z-20 border-b bg-white/95 backdrop-blur-sm">
@@ -79,6 +102,33 @@ export function Header() {
               <AuthDialog user={user} onUserChange={setUser} iconOnly />
             </div>
           )}
+          {user ? (
+            <Dialog open={isLogoutDialogOpen} onOpenChange={setIsLogoutDialogOpen}>
+              <DialogTrigger asChild>
+                <button
+                  type="button"
+                  aria-label="Выйти"
+                  className="flex h-9 w-9 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  <LogOut size={18} strokeWidth={1.5} />
+                </button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[400px]">
+                <DialogHeader>
+                  <DialogTitle>Подтвердите выход</DialogTitle>
+                  <DialogDescription>
+                    Вы действительно хотите выйти из аккаунта?
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button variant="outline" onClick={() => setIsLogoutDialogOpen(false)}>
+                    Отмена
+                  </Button>
+                  <Button onClick={() => void handleLogout()}>Выйти</Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          ) : null}
 
           {/* Mobile menu toggle */}
           <button

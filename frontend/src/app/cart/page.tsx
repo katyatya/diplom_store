@@ -30,6 +30,8 @@ export default function CartPage() {
   const [guestItems, setGuestItems] = useState<GuestCartItem[]>([]);
   const [authorized, setAuthorized] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [pendingQtyItemId, setPendingQtyItemId] = useState<string | null>(null);
+  const [pendingRemoveItemId, setPendingRemoveItemId] = useState<string | null>(null);
   const [status, setStatus] = useState("");
   const { showToast } = useToast();
 
@@ -74,30 +76,37 @@ export default function CartPage() {
   );
 
   async function onChangeQty(itemId: string, nextQty: number, variantId: string) {
-    if (nextQty < 1) return;
-    if (authorized) {
-      try {
+    if (nextQty < 1 || pendingQtyItemId === itemId || pendingRemoveItemId === itemId) return;
+    setPendingQtyItemId(itemId);
+    try {
+      if (authorized) {
         const updated = await updateCartItem(itemId, nextQty);
         setCart(updated);
-      } catch {
-        setStatus("Не удалось изменить количество.");
+        return;
       }
-      return;
+      setGuestItems(updateGuestCartItem(variantId, nextQty));
+    } catch {
+      setStatus("Не удалось изменить количество.");
+    } finally {
+      setPendingQtyItemId((current) => (current === itemId ? null : current));
     }
-    setGuestItems(updateGuestCartItem(variantId, nextQty));
   }
 
   async function onRemove(itemId: string, variantId: string) {
-    if (authorized) {
-      try {
+    if (pendingRemoveItemId === itemId || pendingQtyItemId === itemId) return;
+    setPendingRemoveItemId(itemId);
+    try {
+      if (authorized) {
         const updated = await removeCartItem(itemId);
         setCart(updated);
-      } catch {
-        setStatus("Не удалось удалить товар из корзины.");
+        return;
       }
-      return;
+      setGuestItems(removeGuestCartItem(variantId));
+    } catch {
+      setStatus("Не удалось удалить товар из корзины.");
+    } finally {
+      setPendingRemoveItemId((current) => (current === itemId ? null : current));
     }
-    setGuestItems(removeGuestCartItem(variantId));
   }
 
   return (
@@ -173,17 +182,23 @@ export default function CartPage() {
                         aria-label="Уменьшить количество"
                         className="flex h-8 w-8 items-center justify-center text-sm transition-colors hover:bg-muted"
                         onClick={() => void onChangeQty(item.id, item.quantity - 1, item.variantId)}
+                        disabled={pendingQtyItemId === item.id || pendingRemoveItemId === item.id}
                       >
                         −
                       </button>
                       <span className="flex h-8 w-8 items-center justify-center border-x text-sm">
-                        {item.quantity}
+                        {pendingQtyItemId === item.id ? (
+                          <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-muted-foreground/40 border-t-muted-foreground" />
+                        ) : (
+                          item.quantity
+                        )}
                       </span>
                       <button
                         type="button"
                         aria-label="Увеличить количество"
                         className="flex h-8 w-8 items-center justify-center text-sm transition-colors hover:bg-muted"
                         onClick={() => void onChangeQty(item.id, item.quantity + 1, item.variantId)}
+                        disabled={pendingQtyItemId === item.id || pendingRemoveItemId === item.id}
                       >
                         +
                       </button>
@@ -196,8 +211,9 @@ export default function CartPage() {
                     type="button"
                     className="w-fit text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
                     onClick={() => void onRemove(item.id, item.variantId)}
+                    disabled={pendingQtyItemId === item.id || pendingRemoveItemId === item.id}
                   >
-                    Удалить
+                    {pendingRemoveItemId === item.id ? "Удаление..." : "Удалить"}
                   </button>
                 </div>
               </div>
