@@ -9,6 +9,20 @@ import { UpdateBannerDto } from "./dto/update-banner.dto";
 import { UpdateProductAdminDto } from "./dto/update-product-admin.dto";
 import { UpdateStylistLookDto } from "./dto/update-stylist-look.dto";
 
+function getSizeLabelsByCategory(category: string): string[] {
+  const normalized = category.trim().toLowerCase();
+  const shoeCategories = ["обувь"];
+  const oneSizeCategories = ["сумки", "аксессуары", "аксессуар"];
+
+  if (shoeCategories.some((entry) => normalized.includes(entry))) {
+    return ["35", "36", "37", "38", "39", "40", "41"];
+  }
+  if (oneSizeCategories.some((entry) => normalized.includes(entry))) {
+    return ["ONE_SIZE"];
+  }
+  return ["XS", "S", "M", "L", "XL"];
+}
+
 @Injectable()
 export class AdminService {
   constructor(private readonly prisma: PrismaService) {}
@@ -32,10 +46,14 @@ export class AdminService {
   };
 
   listProducts() {
-    return this.prisma.product.findMany({ orderBy: { createdAt: "desc" } });
+    return this.prisma.product.findMany({
+      include: { variants: { where: { isActive: true }, orderBy: { createdAt: "asc" } } },
+      orderBy: { createdAt: "desc" },
+    });
   }
 
   createProduct(dto: CreateProductDto) {
+    const category = dto.category ?? "Одежда";
     return this.prisma.product.create({
       data: {
         name: dto.name,
@@ -43,9 +61,13 @@ export class AdminService {
         composition: dto.composition,
         imageUrl: dto.imageUrl,
         price: new Prisma.Decimal(dto.price),
-        category: dto.category ?? "Одежда",
+        category,
         isNew: dto.isNew ?? false,
+        variants: {
+          create: getSizeLabelsByCategory(category).map((sizeLabel) => ({ sizeLabel })),
+        },
       },
+      include: { variants: { where: { isActive: true }, orderBy: { createdAt: "asc" } } },
     });
   }
 
@@ -53,12 +75,28 @@ export class AdminService {
     const product = await this.prisma.product.findUnique({ where: { id: productId } });
     if (!product) throw new NotFoundException("Product not found");
 
+    if (dto.category && dto.category !== product.category) {
+      await this.prisma.productVariant.updateMany({
+        where: { productId },
+        data: { isActive: false },
+      });
+      const nextSizes = getSizeLabelsByCategory(dto.category);
+      for (const sizeLabel of nextSizes) {
+        await this.prisma.productVariant.upsert({
+          where: { productId_sizeLabel: { productId, sizeLabel } },
+          create: { productId, sizeLabel, isActive: true },
+          update: { isActive: true },
+        });
+      }
+    }
+
     return this.prisma.product.update({
       where: { id: productId },
       data: {
         ...dto,
         ...(dto.price !== undefined ? { price: new Prisma.Decimal(dto.price) } : {}),
       },
+      include: { variants: { where: { isActive: true }, orderBy: { createdAt: "asc" } } },
     });
   }
 

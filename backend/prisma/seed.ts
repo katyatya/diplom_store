@@ -3,11 +3,23 @@ import * as bcrypt from "bcrypt";
 
 const prisma = new PrismaClient();
 
+function getSizeLabelsByCategory(category: string): string[] {
+  const normalized = category.trim().toLowerCase();
+  if (normalized.includes("обув")) {
+    return ["35", "36", "37", "38", "39", "40", "41"];
+  }
+  if (normalized.includes("сумк") || normalized.includes("аксессуар")) {
+    return ["ONE_SIZE"];
+  }
+  return ["XS", "S", "M", "L", "XL"];
+}
+
 async function main(): Promise<void> {
   await prisma.orderItem.deleteMany();
   await prisma.order.deleteMany();
   await prisma.wishlistItem.deleteMany();
   await prisma.cartItem.deleteMany();
+  await prisma.productVariant.deleteMany();
   await prisma.cart.deleteMany();
   await prisma.outfit.deleteMany();
   await prisma.banner.deleteMany();
@@ -121,6 +133,7 @@ async function main(): Promise<void> {
   ];
 
   const productIds: string[] = [];
+  const productDefaultVariantIds: string[] = [];
   for (const product of productsData) {
     const savedProduct = await prisma.product.create({
       data: {
@@ -130,9 +143,18 @@ async function main(): Promise<void> {
         price: new Prisma.Decimal(product.price),
         imageUrl: product.imageUrl,
         category: product.category,
+        variants: {
+          create: getSizeLabelsByCategory(product.category).map((sizeLabel) => ({ sizeLabel })),
+        },
+      },
+      include: {
+        variants: true,
       },
     });
+    const defaultVariant =
+      savedProduct.variants.find((variant) => variant.sizeLabel === "M") ?? savedProduct.variants[0];
     productIds.push(savedProduct.id);
+    productDefaultVariantIds.push(defaultVariant.id);
   }
 
   await prisma.cart.upsert({
@@ -142,8 +164,8 @@ async function main(): Promise<void> {
       userId: user.id,
       items: {
         create: [
-          { productId: productIds[0], quantity: 1 },
-          { productId: productIds[1], quantity: 2 },
+          { variantId: productDefaultVariantIds[0], quantity: 1 },
+          { variantId: productDefaultVariantIds[1], quantity: 2 },
         ],
       },
     },

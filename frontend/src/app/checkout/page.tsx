@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createOrder, fetchCart, fetchMe } from "@/lib/api";
 import { requestAuthRequired } from "@/lib/auth-required";
@@ -30,6 +30,14 @@ type CheckoutErrors = {
 const PHONE_MASK_REGEX = /^\+7 \(\d{3}\) \d{3}-\d{2}-\d{2}$/;
 
 export default function CheckoutPage() {
+  return (
+    <Suspense fallback={<p className="text-sm text-muted-foreground">Загрузка оформления заказа...</p>}>
+      <CheckoutPageInner />
+    </Suspense>
+  );
+}
+
+function CheckoutPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [authorized, setAuthorized] = useState(false);
@@ -50,7 +58,7 @@ export default function CheckoutPage() {
   const { showToast } = useToast();
 
   const orderItemsTotal = cartItems.reduce(
-    (sum, item) => sum + Number(item.product.price) * item.quantity,
+    (sum, item) => sum + Number(item.variant.product.price) * item.quantity,
     0,
   );
   const deliveryPrice = deliveryType === "CDEK" ? 370 : 0;
@@ -214,16 +222,18 @@ export default function CheckoutPage() {
               className="grid grid-cols-[56px_minmax(0,1fr)] items-start gap-3 rounded-md border p-2"
             >
               <img
-                src={getPrimaryProductImage(item.product)}
-                alt={item.product.name}
+                src={getPrimaryProductImage(item.variant.product)}
+                alt={item.variant.product.name}
                 className="h-14 w-14 rounded-md object-cover"
               />
               <div className="grid gap-1">
-                <p className="text-sm font-medium">{item.product.name}</p>
+                <p className="text-sm font-medium">{item.variant.product.name}</p>
                 <p className="text-xs text-muted-foreground">
-                  Цена: {Number(item.product.price).toLocaleString("ru-RU")} руб
+                  Цена: {Number(item.variant.product.price).toLocaleString("ru-RU")} руб
                 </p>
-                <p className="text-xs text-muted-foreground">Размер: не указан</p>
+                <p className="text-xs text-muted-foreground">
+                  Размер: {item.variant.sizeLabel === "ONE_SIZE" ? "ONE SIZE" : item.variant.sizeLabel}
+                </p>
                 <p className="text-xs text-muted-foreground">Количество: {item.quantity}</p>
               </div>
             </article>

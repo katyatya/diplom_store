@@ -37,8 +37,15 @@ export default function WishlistPage() {
   }
 
   async function onMoveToCart(productId: string) {
+    const item = items.find((entry) => entry.product.id === productId);
+    const defaultVariant = item?.product.variants[0];
+    if (!defaultVariant) {
+      setStatus("Для товара не настроены размеры.");
+      showToast("Для товара не настроены размеры.", "error");
+      return;
+    }
     try {
-      await addToCart(productId, 1);
+      await addToCart(defaultVariant.id, 1);
       showToast("Товар добавлен в корзину");
     } catch {
       setStatus("Не удалось добавить в корзину.");

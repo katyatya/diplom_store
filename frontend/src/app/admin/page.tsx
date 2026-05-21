@@ -250,7 +250,8 @@ export default function AdminPage() {
           <ul className="list-inside list-disc text-sm text-muted-foreground">
             {order.items.map((item) => (
               <li key={item.id}>
-                {item.productName} x {item.quantity} - {Number(item.productPrice).toLocaleString("ru-RU")} руб
+                {item.productName} ({item.sizeLabel === "ONE_SIZE" ? "ONE SIZE" : item.sizeLabel}) x{" "}
+                {item.quantity} - {Number(item.productPrice).toLocaleString("ru-RU")} руб
               </li>
             ))}
           </ul>

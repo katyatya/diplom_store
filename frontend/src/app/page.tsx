@@ -25,8 +25,13 @@ export default function HomePage() {
   }, []);
 
   async function handleAddToCart(product: Product) {
+    const defaultVariant = product.variants[0];
+    if (!defaultVariant) {
+      showToast("Для товара не настроены размеры.", "error");
+      return;
+    }
     try {
-      await addProductToCart(product, 1);
+      await addProductToCart(product, defaultVariant.id, defaultVariant.sizeLabel, 1);
       showToast("Товар добавлен в корзину");
     } catch {
       showToast("Не удалось добавить товар в корзину.", "error");

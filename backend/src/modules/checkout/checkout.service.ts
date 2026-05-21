@@ -32,7 +32,7 @@ export class CheckoutService {
       where: { userId },
       include: {
         items: {
-          include: { product: true },
+          include: { variant: { include: { product: true } } },
         },
       },
     });
@@ -42,7 +42,7 @@ export class CheckoutService {
     }
 
     const itemsTotal = cart.items.reduce((acc, item) => {
-      return acc + Number(item.product.price) * item.quantity;
+      return acc + Number(item.variant.product.price) * item.quantity;
     }, 0);
     const deliveryPrice = dto.deliveryType === "CDEK" ? 370 : 0;
     const totalAmount = itemsTotal + deliveryPrice;
@@ -63,9 +63,10 @@ export class CheckoutService {
         totalAmount: new Prisma.Decimal(totalAmount),
         items: {
           create: cart.items.map((item) => ({
-            productId: item.productId,
-            productName: item.product.name,
-            productPrice: item.product.price,
+            variantId: item.variantId,
+            sizeLabel: item.variant.sizeLabel,
+            productName: item.variant.product.name,
+            productPrice: item.variant.product.price,
             quantity: item.quantity,
           })),
         },
