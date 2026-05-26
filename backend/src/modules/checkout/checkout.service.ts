@@ -1,11 +1,15 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
 import { PaymentStatus, Prisma } from "@prisma/client";
 import { DatabaseService } from "../../database/database.service";
+import { OrderNotificationService } from "../mail/order-notification.service";
 import { CreateOrderDto } from "./dto/create-order.dto";
 
 @Injectable()
 export class CheckoutService {
-  constructor(private readonly prisma: DatabaseService) {}
+  constructor(
+    private readonly prisma: DatabaseService,
+    private readonly orderNotifications: OrderNotificationService,
+  ) {}
 
   private async generateNumericOrderId(): Promise<string> {
     for (let attempt = 0; attempt < 5; attempt += 1) {
@@ -80,7 +84,10 @@ export class CheckoutService {
 
     await this.prisma.cartItem.deleteMany({ where: { cartId: cart.id } });
 
-    // Temporary "seller notification": order becomes visible in admin endpoint.
+    void this.orderNotifications.notifyNewOrder(order).catch(() => {
+      // Errors are logged in MailService / OrderNotificationService.
+    });
+
     return order;
   }
 
