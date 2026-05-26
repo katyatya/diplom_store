@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import { PrismaService } from "../../prisma/prisma.service";
+import { DatabaseService } from "../../database/database.service";
 import { AddCartItemDto } from "./dto/add-cart-item.dto";
 
 function extractProductId(value: unknown): string | null {
@@ -12,7 +12,7 @@ function extractProductId(value: unknown): string | null {
 
 @Injectable()
 export class CartService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: DatabaseService) {}
 
   async getMyCart(userId: string) {
     const cart = await this.prisma.cart.upsert({

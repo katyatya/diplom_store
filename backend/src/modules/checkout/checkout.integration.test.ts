@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { Test } from "@nestjs/testing";
 import { JwtUser } from "../../common/interfaces/jwt-user.interface";
-import { PrismaService } from "../../prisma/prisma.service";
+import { DatabaseService } from "../../database/database.service";
 import { CheckoutController } from "./checkout.controller";
 import { CheckoutService } from "./checkout.service";
 
@@ -44,8 +44,8 @@ describe("Checkout module integration", () => {
       providers: [
         {
           provide: CheckoutService,
-          useFactory: (prisma: PrismaService) => new CheckoutService(prisma),
-          inject: [PrismaService],
+          useFactory: (prisma: DatabaseService) => new CheckoutService(prisma),
+          inject: [DatabaseService],
         },
         {
           provide: CheckoutController,
@@ -53,7 +53,7 @@ describe("Checkout module integration", () => {
             new CheckoutController(checkoutService),
           inject: [CheckoutService],
         },
-        { provide: PrismaService, useValue: prismaMock },
+        { provide: DatabaseService, useValue: prismaMock },
       ],
     }).compile();
 

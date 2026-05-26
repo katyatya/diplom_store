@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { BadRequestException } from "@nestjs/common";
-import { PrismaService } from "../../prisma/prisma.service";
+import { DatabaseService } from "../../database/database.service";
 import { CheckoutService } from "./checkout.service";
 
 describe("CheckoutService", () => {
@@ -38,7 +38,7 @@ describe("CheckoutService", () => {
         },
       },
     };
-    const service = new CheckoutService(prisma as unknown as PrismaService);
+    const service = new CheckoutService(prisma as unknown as DatabaseService);
 
     const result = await service.createOrder("user-1", {
       customerName: "Анна",
@@ -62,7 +62,7 @@ describe("CheckoutService", () => {
         findUnique: async () => ({ id: "cart-1", items: [] }),
       },
     };
-    const service = new CheckoutService(prisma as unknown as PrismaService);
+    const service = new CheckoutService(prisma as unknown as DatabaseService);
 
     await assert.rejects(
       () =>

@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Product, addProductToCart } from "@/lib/api";
-import { getPrimaryProductImage } from "@/lib/product-images";
+import { getProductHref } from "@/lib/catalog";
+import { ProductCardImage } from "@/components/features/catalog/product-card-image";
+import { ProductPrice } from "@/components/features/catalog/product-price";
 import { useToast } from "@/components/ui/toast";
 
 type NewProductsGridProps = {
@@ -46,15 +48,13 @@ export function NewProductsGrid({ products }: NewProductsGridProps) {
       {products.map((product) => (
         <Link
           key={product.id}
-          href={`/catalog/product/${product.slug || product.id}`}
+          href={getProductHref(product)}
           className="group block"
         >
-          <div className="relative overflow-hidden bg-muted/30">
-            <img
-              src={getPrimaryProductImage(product)}
-              alt={product.name}
-              className="h-[320px] w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
-            />
+          <ProductCardImage
+            product={product}
+            imageClassName="h-[320px] transition-transform duration-500 group-hover:scale-[1.04]"
+          >
             <button
               type="button"
               aria-label="Добавить в корзину"
@@ -64,12 +64,10 @@ export function NewProductsGrid({ products }: NewProductsGridProps) {
             >
               {pendingProductId === product.id ? "Добавляем..." : "В корзину"}
             </button>
-          </div>
+          </ProductCardImage>
           <div className="mt-3 grid gap-1">
             <h3 className="text-xs uppercase tracking-wide">{product.name}</h3>
-            <p className="text-sm font-light text-muted-foreground">
-              {Number(product.price).toLocaleString("ru-RU")} ₽
-            </p>
+            <ProductPrice value={product.price} className="text-sm font-light text-muted-foreground" />
           </div>
         </Link>
       ))}

@@ -1,12 +1,12 @@
 import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
-import { PrismaService } from "../../prisma/prisma.service";
+import { DatabaseService } from "../../database/database.service";
 import { CreateOutfitDto } from "./dto/create-outfit.dto";
 import { UpdateOutfitDto } from "./dto/update-outfit.dto";
 
 @Injectable()
 export class OutfitsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: DatabaseService) {}
 
   listMine(userId: string) {
     return this.prisma.outfit.findMany({

@@ -14,28 +14,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/toast";
-
-const ORDER_STATUS_LABELS: Record<string, string> = {
-  NEW: "Новый",
-  CONFIRMED: "Подтвержден",
-  ASSEMBLING: "Сборка",
-  READY_FOR_PICKUP: "Готов к выдаче",
-  SHIPPED: "Передан в доставку",
-  DELIVERED: "Выдан",
-  CANCELLED_NO_STOCK: "Отменен: нет в наличии",
-  CANCELLED_BY_CLIENT: "Отменен клиентом",
-  CANCELLED_OTHER: "Отменен (прочее)",
-};
-
-function getStatusBadgeClass(status: string): string {
-  if (status === "DELIVERED" || status === "READY_FOR_PICKUP") {
-    return "bg-emerald-100 text-emerald-700";
-  }
-  if (status.startsWith("CANCELLED")) {
-    return "bg-red-100 text-red-700";
-  }
-  return "bg-amber-100 text-amber-700";
-}
+import { ORDER_STATUS_LABELS, getStatusBadgeClass } from "@/lib/orders";
+import { formatPrice, formatSizeLabel } from "@/lib/format";
 
 export default function ProfilePage() {
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -136,17 +116,16 @@ export default function ProfilePage() {
             ) : null}
             <p className="text-sm text-muted-foreground">
             Доставка: {order.deliveryType === "PICKUP" ? "Самовывоз" : "CDEK"} /{" "}
-            {Number(order.deliveryPrice).toLocaleString("ru-RU")} руб
+            {formatPrice(order.deliveryPrice, "word")}
             </p>
             <p className="text-sm text-muted-foreground">Оплата: {order.paymentMethod}</p>
             <p>
-              Сумма: <strong>{Number(order.totalAmount).toLocaleString("ru-RU")} руб</strong>
+              Сумма: <strong>{formatPrice(order.totalAmount, "word")}</strong>
             </p>
             <ul className="list-inside list-disc text-sm text-muted-foreground">
               {order.items.map((item) => (
                 <li key={item.id}>
-                  {item.productName} ({item.sizeLabel === "ONE_SIZE" ? "ONE SIZE" : item.sizeLabel}) x{" "}
-                  {item.quantity}
+                  {item.productName} ({formatSizeLabel(item.sizeLabel)}) x {item.quantity}
                 </li>
               ))}
             </ul>

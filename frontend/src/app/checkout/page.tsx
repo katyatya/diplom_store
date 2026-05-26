@@ -18,6 +18,8 @@ import { Label } from "@/components/ui/label";
 import { AddressInput } from "@/components/features/checkout/address-input";
 import { getPrimaryProductImage } from "@/lib/product-images";
 import { useToast } from "@/components/ui/toast";
+import { formatPrice, formatSizeLabel } from "@/lib/format";
+import { DELIVERY_CDEK_PRICE } from "@/lib/delivery";
 
 type CheckoutErrors = {
   customerName?: string;
@@ -89,7 +91,7 @@ function CheckoutPageInner() {
     (sum, item) => sum + Number(item.variant.product.price) * item.quantity,
     0,
   );
-  const deliveryPrice = deliveryType === "CDEK" ? 370 : 0;
+  const deliveryPrice = deliveryType === "CDEK" ? DELIVERY_CDEK_PRICE : 0;
   const totalAmount = orderItemsTotal + deliveryPrice;
 
   useEffect(() => {
@@ -309,7 +311,7 @@ function CheckoutPageInner() {
                   }}
                 >
                   <option value="PICKUP">Самовывоз — бесплатно</option>
-                  <option value="CDEK">Доставка CDEK — 370 ₽</option>
+                  <option value="CDEK">Доставка CDEK — {formatPrice(DELIVERY_CDEK_PRICE)}</option>
                 </select>
               </Label>
               {deliveryType === "CDEK" ? (
@@ -368,12 +370,10 @@ function CheckoutPageInner() {
                     {item.variant.product.name}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {item.variant.sizeLabel === "ONE_SIZE" ? "ONE SIZE" : item.variant.sizeLabel}
+                    {formatSizeLabel(item.variant.sizeLabel)}
                     {" · "}× {item.quantity}
                   </p>
-                  <p className="text-sm font-light">
-                    {(Number(item.variant.product.price) * item.quantity).toLocaleString("ru-RU")} ₽
-                  </p>
+                  <p className="text-sm font-light">{formatPrice(Number(item.variant.product.price) * item.quantity)}</p>
                 </div>
               </div>
             ))}
@@ -383,15 +383,15 @@ function CheckoutPageInner() {
             <div className="mt-6 grid gap-2 border-t pt-4">
               <div className="flex justify-between text-sm text-muted-foreground">
                 <span>Товары</span>
-                <span>{orderItemsTotal.toLocaleString("ru-RU")} ₽</span>
+                <span>{formatPrice(orderItemsTotal)}</span>
               </div>
               <div className="flex justify-between text-sm text-muted-foreground">
                 <span>Доставка</span>
-                <span>{deliveryPrice === 0 ? "Бесплатно" : `${deliveryPrice.toLocaleString("ru-RU")} ₽`}</span>
+                <span>{deliveryPrice === 0 ? "Бесплатно" : formatPrice(deliveryPrice)}</span>
               </div>
               <div className="flex items-center justify-between border-t pt-2">
                 <span className="text-sm font-medium uppercase tracking-wide">Итого</span>
-                <span className="text-lg font-light">{totalAmount.toLocaleString("ru-RU")} ₽</span>
+                <span className="text-lg font-light">{formatPrice(totalAmount)}</span>
               </div>
             </div>
           ) : null}

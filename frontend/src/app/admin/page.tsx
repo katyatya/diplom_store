@@ -25,78 +25,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
 import { ConstructorEditor } from "@/components/features/outfits/constructor-editor";
-
-const ORDER_STATUS_LABELS: Record<string, string> = {
-  NEW: "Новый",
-  CONFIRMED: "Подтвержден",
-  ASSEMBLING: "Сборка",
-  READY_FOR_PICKUP: "Готов к выдаче",
-  SHIPPED: "Передан в доставку",
-  DELIVERED: "Выдан",
-  CANCELLED_NO_STOCK: "Отменен: нет в наличии",
-  CANCELLED_BY_CLIENT: "Отменен клиентом",
-  CANCELLED_OTHER: "Отменен (прочее)",
-};
-
-function getStatusBadgeClass(status: string): string {
-  if (status === "DELIVERED" || status === "READY_FOR_PICKUP") {
-    return "bg-emerald-100 text-emerald-700";
-  }
-  if (status.startsWith("CANCELLED")) {
-    return "bg-red-100 text-red-700";
-  }
-  return "bg-amber-100 text-amber-700";
-}
-
-function extractApiErrorMessage(error: unknown, fallback: string): string {
-  if (!(error instanceof Error)) return fallback;
-  const raw = error.message?.trim();
-  if (!raw) return fallback;
-  try {
-    const parsed = JSON.parse(raw) as {
-      message?: string | string[];
-      error?: string;
-    };
-    if (Array.isArray(parsed.message) && parsed.message.length > 0) {
-      return parsed.message.join("; ");
-    }
-    if (typeof parsed.message === "string" && parsed.message.trim()) {
-      return parsed.message;
-    }
-    if (typeof parsed.error === "string" && parsed.error.trim()) {
-      return parsed.error;
-    }
-  } catch {
-    return raw;
-  }
-  return raw || fallback;
-}
-
-function localizeAdminErrorMessage(message: string): string {
-  const normalized = message.trim();
-  const directMap: Record<string, string> = {
-    "Collection not found": "Коллекция не найдена.",
-    "Banner not found": "Баннер не найден.",
-    "Product not found": "Товар не найден.",
-    "Order not found": "Заказ не найден.",
-    "Some products were not found": "Некоторые выбранные товары не найдены.",
-    "Collection slug is invalid":
-      "Slug коллекции должен содержать только латинские буквы, цифры и дефис.",
-    "Collection title is required": "Введите название коллекции.",
-    "Cancel reason is required for cancelled orders": "Укажите причину отмены заказа.",
-  };
-  if (directMap[normalized]) {
-    return directMap[normalized];
-  }
-  return normalized;
-}
+import { formatPrice } from "@/lib/format";
+import { AdminSection, extractApiErrorMessage, localizeAdminErrorMessage } from "@/lib/admin";
+import { AdminSectionsNav } from "@/components/features/admin/admin-sections-nav";
+import { OrderCard } from "@/components/features/admin/order-card";
 
 export default function AdminPage() {
   const { showToast } = useToast();
   const [accessState, setAccessState] = useState<"checking" | "granted" | "denied">("checking");
-  const [activeSection, setActiveSection] = useState<
-    "products" | "orders" | "stylistLooks" | "banners" | "collections"
-  >("products");
+  const [activeSection, setActiveSection] = useState<AdminSection>("products");
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [banners, setBanners] = useState<Banner[]>([]);
@@ -387,24 +324,6 @@ export default function AdminPage() {
     };
   }, [load]);
 
-  function getAllowedNextStatuses(currentStatus: string, deliveryType: string): string[] {
-    const map: Record<string, string[]> = {
-      NEW: ["CONFIRMED", "CANCELLED_NO_STOCK", "CANCELLED_BY_CLIENT", "CANCELLED_OTHER"],
-      CONFIRMED: ["ASSEMBLING", "CANCELLED_NO_STOCK", "CANCELLED_BY_CLIENT", "CANCELLED_OTHER"],
-      ASSEMBLING:
-        deliveryType === "PICKUP"
-          ? ["READY_FOR_PICKUP", "CANCELLED_NO_STOCK", "CANCELLED_BY_CLIENT", "CANCELLED_OTHER"]
-          : ["SHIPPED", "CANCELLED_NO_STOCK", "CANCELLED_BY_CLIENT", "CANCELLED_OTHER"],
-      READY_FOR_PICKUP: ["DELIVERED", "CANCELLED_BY_CLIENT", "CANCELLED_OTHER"],
-      SHIPPED: ["DELIVERED", "CANCELLED_OTHER"],
-      DELIVERED: [],
-      CANCELLED_NO_STOCK: [],
-      CANCELLED_BY_CLIENT: [],
-      CANCELLED_OTHER: [],
-    };
-    return [currentStatus, ...(map[currentStatus] ?? [])];
-  }
-
   async function onUpdateOrderStatus(order: Order) {
     if (updatingOrderIds[order.id]) return;
     const nextStatus = statusDrafts[order.id] ?? order.status;
@@ -513,79 +432,6 @@ export default function AdminPage() {
     }
   }
 
-  function renderOrderCard(order: Order) {
-    return (
-      <article key={order.id} className="rounded-lg border p-3">
-        <strong>Заказ {order.id}</strong> - {order.customerName}
-        <p className="my-1 text-sm text-muted-foreground">
-          {order.email} / {order.phone}
-        </p>
-        <p className="my-1 text-sm text-muted-foreground">
-          {order.deliveryType} / {Number(order.totalAmount).toLocaleString("ru-RU")} руб
-        </p>
-        <div className="my-2">
-          <p className="mb-1 text-sm font-medium">Товары в заказе:</p>
-          <ul className="list-inside list-disc text-sm text-muted-foreground">
-            {order.items.map((item) => (
-              <li key={item.id}>
-                {item.productName} ({item.sizeLabel === "ONE_SIZE" ? "ONE SIZE" : item.sizeLabel}) x{" "}
-                {item.quantity} - {Number(item.productPrice).toLocaleString("ru-RU")} руб
-              </li>
-            ))}
-          </ul>
-        </div>
-        <div className="mt-2 grid max-w-md gap-2">
-          <p className="text-sm text-muted-foreground">
-            Текущий статус:{" "}
-            <span
-              className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${getStatusBadgeClass(order.status)}`}
-            >
-              {ORDER_STATUS_LABELS[order.status] ?? order.status}
-            </span>
-          </p>
-          <select
-            className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-            value={statusDrafts[order.id] ?? order.status}
-            onChange={(event) =>
-              setStatusDrafts((current) => ({
-                ...current,
-                [order.id]: event.target.value,
-              }))
-            }
-          >
-            {getAllowedNextStatuses(order.status, order.deliveryType).map((statusOption) => (
-              <option key={statusOption} value={statusOption}>
-                {ORDER_STATUS_LABELS[statusOption] ?? statusOption}
-              </option>
-            ))}
-          </select>
-          {(statusDrafts[order.id] ?? order.status).startsWith("CANCELLED") ? (
-            <Input
-              value={cancelReasonDrafts[order.id] ?? ""}
-              onChange={(event) =>
-                setCancelReasonDrafts((current) => ({
-                  ...current,
-                  [order.id]: event.target.value,
-                }))
-              }
-              placeholder="Причина отмены"
-            />
-          ) : null}
-          {order.cancelReason ? (
-            <p className="text-sm text-muted-foreground">Причина отмены: {order.cancelReason}</p>
-          ) : null}
-          <Button
-            size="sm"
-            disabled={updatingOrderIds[order.id]}
-            onClick={() => void onUpdateOrderStatus(order)}
-          >
-            Обновить статус
-          </Button>
-        </div>
-      </article>
-    );
-  }
-
   if (accessState === "checking") {
     return (
       <section className="grid gap-4">
@@ -612,68 +458,7 @@ export default function AdminPage() {
      
       {status ? <p className="text-sm text-muted-foreground">{status}</p> : null}
 
-      <div className="grid gap-3 sm:grid-cols-5">
-        <button
-          type="button"
-          onClick={() => setActiveSection("products")}
-          className={`rounded-lg border p-4 text-left transition-colors ${
-            activeSection === "products" ? "border-foreground border-green-500" : "hover:bg-accent/20"
-          }`}
-        >
-          <p className="text-lg font-semibold">Товары</p>
-          <p className="text-sm text-muted-foreground">
-            Добавление, редактирование и удаление существующих товаров
-          </p>
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveSection("orders")}
-          className={`rounded-lg border p-4 text-left transition-colors ${
-            activeSection === "orders" ? "border-foreground border-green-500" : "hover:bg-accent/20"
-          }`}
-        >
-          <p className="text-lg font-semibold">Заказы</p>
-          <p className="text-sm text-muted-foreground">
-            Новые, в работе и архивные заказы + смена статуса
-          </p>
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveSection("stylistLooks")}
-          className={`rounded-lg border p-4 text-left transition-colors ${
-            activeSection === "stylistLooks" ? "border-foreground border-green-500" : "hover:bg-accent/20"
-          }`}
-        >
-          <p className="text-lg font-semibold">Образы стилиста</p>
-          <p className="text-sm text-muted-foreground">
-            Конструктор и управление образами, которые публикуются как стилистские
-          </p>
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveSection("collections")}
-          className={`rounded-lg border p-4 text-left transition-colors ${
-            activeSection === "collections" ? "border-foreground border-green-500" : "hover:bg-accent/20"
-          }`}
-        >
-          <p className="text-lg font-semibold">Коллекции</p>
-          <p className="text-sm text-muted-foreground">
-            Создание коллекций для разделов и ссылок с главной страницы
-          </p>
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveSection("banners")}
-          className={`rounded-lg border p-4 text-left transition-colors ${
-            activeSection === "banners" ? "border-foreground border-green-500" : "hover:bg-accent/20"
-          }`}
-        >
-          <p className="text-lg font-semibold">Баннеры</p>
-          <p className="text-sm text-muted-foreground">
-            Добавление баннеров, отображаемых на главной странице
-          </p>
-        </button>
-      </div>
+      <AdminSectionsNav activeSection={activeSection} onChange={setActiveSection} />
 
       {activeSection === "products" ? (
         <>
@@ -828,7 +613,7 @@ export default function AdminPage() {
                 </div>
               ) : (
                 <>
-                  <strong>{product.name}</strong> - {Number(product.price).toLocaleString("ru-RU")} руб
+                  <strong>{product.name}</strong> - {formatPrice(product.price, "word")}
                   <p className="my-1 text-sm text-muted-foreground">
                     {product.category} / {product.isActive ? "Активен" : "Скрыт"}
                   </p>
@@ -870,7 +655,28 @@ export default function AdminPage() {
           {newOrders.length === 0 ? (
             <p className="text-sm text-muted-foreground">Новых заказов нет.</p>
           ) : (
-            newOrders.map(renderOrderCard)
+            newOrders.map((order) => (
+              <OrderCard
+                key={order.id}
+                order={order}
+                statusDraft={statusDrafts[order.id] ?? order.status}
+                cancelReasonDraft={cancelReasonDrafts[order.id] ?? ""}
+                isUpdating={Boolean(updatingOrderIds[order.id])}
+                onStatusDraftChange={(orderId, nextStatus) =>
+                  setStatusDrafts((current) => ({
+                    ...current,
+                    [orderId]: nextStatus,
+                  }))
+                }
+                onCancelReasonDraftChange={(orderId, nextReason) =>
+                  setCancelReasonDrafts((current) => ({
+                    ...current,
+                    [orderId]: nextReason,
+                  }))
+                }
+                onUpdate={(nextOrder) => void onUpdateOrderStatus(nextOrder)}
+              />
+            ))
           )}
         </CardContent>
       </Card>
@@ -883,7 +689,28 @@ export default function AdminPage() {
           {activeOrders.length === 0 ? (
             <p className="text-sm text-muted-foreground">Заказов в работе нет.</p>
           ) : (
-            activeOrders.map(renderOrderCard)
+            activeOrders.map((order) => (
+              <OrderCard
+                key={order.id}
+                order={order}
+                statusDraft={statusDrafts[order.id] ?? order.status}
+                cancelReasonDraft={cancelReasonDrafts[order.id] ?? ""}
+                isUpdating={Boolean(updatingOrderIds[order.id])}
+                onStatusDraftChange={(orderId, nextStatus) =>
+                  setStatusDrafts((current) => ({
+                    ...current,
+                    [orderId]: nextStatus,
+                  }))
+                }
+                onCancelReasonDraftChange={(orderId, nextReason) =>
+                  setCancelReasonDrafts((current) => ({
+                    ...current,
+                    [orderId]: nextReason,
+                  }))
+                }
+                onUpdate={(nextOrder) => void onUpdateOrderStatus(nextOrder)}
+              />
+            ))
           )}
         </CardContent>
       </Card>
@@ -899,7 +726,28 @@ export default function AdminPage() {
           {archivedOrders.length === 0 ? (
             <p className="text-sm text-muted-foreground">Архив пока пуст.</p>
           ) : (
-            archivedOrders.map(renderOrderCard)
+            archivedOrders.map((order) => (
+              <OrderCard
+                key={order.id}
+                order={order}
+                statusDraft={statusDrafts[order.id] ?? order.status}
+                cancelReasonDraft={cancelReasonDrafts[order.id] ?? ""}
+                isUpdating={Boolean(updatingOrderIds[order.id])}
+                onStatusDraftChange={(orderId, nextStatus) =>
+                  setStatusDrafts((current) => ({
+                    ...current,
+                    [orderId]: nextStatus,
+                  }))
+                }
+                onCancelReasonDraftChange={(orderId, nextReason) =>
+                  setCancelReasonDrafts((current) => ({
+                    ...current,
+                    [orderId]: nextReason,
+                  }))
+                }
+                onUpdate={(nextOrder) => void onUpdateOrderStatus(nextOrder)}
+              />
+            ))
           )}
         </CardContent>
       </Card>
@@ -969,7 +817,7 @@ export default function AdminPage() {
                                   }
                                 />
                                 <span>
-                                  {product.name} ({Number(product.price).toLocaleString("ru-RU")} руб)
+                                  {product.name} ({formatPrice(product.price, "word")})
                                 </span>
                               </label>
                             );

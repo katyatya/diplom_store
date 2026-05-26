@@ -16,6 +16,8 @@ import { AUTH_STATE_CHANGED_EVENT, requestAuthRequired } from "@/lib/auth-requir
 import { Button } from "@/components/ui/button";
 import { getPrimaryProductImage } from "@/lib/product-images";
 import { useToast } from "@/components/ui/toast";
+import { formatPrice, formatSizeLabel } from "@/lib/format";
+import { getProductHref } from "@/lib/catalog";
 
 type DisplayCartItem = {
   id: string;
@@ -160,7 +162,7 @@ export default function CartPage() {
           <div className="grid gap-0">
             {items.map((item) => (
               <div key={item.id} className="grid grid-cols-[96px_1fr] gap-4 border-b py-6 sm:grid-cols-[112px_1fr]">
-                <Link href={`/catalog/product/${item.product.slug || item.product.id}`}>
+                <Link href={getProductHref(item.product)}>
                   <img
                     src={getPrimaryProductImage(item.product)}
                     alt={item.product.name}
@@ -170,13 +172,13 @@ export default function CartPage() {
                 <div className="flex flex-col justify-between gap-2">
                   <div>
                     <Link
-                      href={`/catalog/product/${item.product.slug || item.product.id}`}
+                      href={getProductHref(item.product)}
                       className="text-xs uppercase tracking-wide hover:underline"
                     >
                       {item.product.name}
                     </Link>
                     <p className="mt-1 text-xs text-muted-foreground  ">
-                      Размер: {item.sizeLabel === "ONE_SIZE" ? "ONE SIZE" : item.sizeLabel}
+                      Размер: {formatSizeLabel(item.sizeLabel)}
                     </p>
                   </div>
                   <div className="flex items-center justify-between gap-4">
@@ -207,9 +209,7 @@ export default function CartPage() {
                         +
                       </button>
                     </div>
-                    <p className="text-sm font-light">
-                      {(Number(item.product.price) * item.quantity).toLocaleString("ru-RU")} ₽
-                    </p>
+                    <p className="text-sm font-light">{formatPrice(Number(item.product.price) * item.quantity)}</p>
                   </div>
                   <button
                     type="button"
@@ -233,15 +233,13 @@ export default function CartPage() {
                   <span className="truncate text-muted-foreground">
                     {item.product.name} × {item.quantity}
                   </span>
-                  <span className="shrink-0">
-                    {(Number(item.product.price) * item.quantity).toLocaleString("ru-RU")} ₽
-                  </span>
+                  <span className="shrink-0">{formatPrice(Number(item.product.price) * item.quantity)}</span>
                 </div>
               ))}
             </div>
             <div className="mt-4 flex items-center justify-between">
               <span className="text-sm font-medium uppercase tracking-wide">Сумма</span>
-              <span className="text-lg font-light">{total.toLocaleString("ru-RU")} ₽</span>
+              <span className="text-lg font-light">{formatPrice(total)}</span>
             </div>
             <div className="mt-6 grid gap-2">
               {authorized ? (

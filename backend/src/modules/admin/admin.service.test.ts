@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { BadRequestException } from "@nestjs/common";
-import { PrismaService } from "../../prisma/prisma.service";
+import { DatabaseService } from "../../database/database.service";
 import { AdminService } from "./admin.service";
 
 describe("AdminService", () => {
@@ -15,7 +15,7 @@ describe("AdminService", () => {
         },
       },
     };
-    const service = new AdminService(prisma as unknown as PrismaService);
+    const service = new AdminService(prisma as unknown as DatabaseService);
 
     await service.createProduct({
       name: "Кеды",
@@ -43,7 +43,7 @@ describe("AdminService", () => {
         findUnique: async () => ({ id: "order-1", status: "DELIVERED" }),
       },
     };
-    const service = new AdminService(prisma as unknown as PrismaService);
+    const service = new AdminService(prisma as unknown as DatabaseService);
 
     await assert.rejects(
       () => service.updateOrderStatus("order-1", { status: "NEW" }),

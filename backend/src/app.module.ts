@@ -9,12 +9,12 @@ import { CheckoutModule } from "./modules/checkout/checkout.module";
 import { OutfitsModule } from "./modules/outfits/outfits.module";
 import { StylistLooksModule } from "./modules/stylist-looks/stylist-looks.module";
 import { WishlistModule } from "./modules/wishlist/wishlist.module";
-import { PrismaModule } from "./prisma/prisma.module";
+import { DatabaseModule } from "./database/database.module";
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    PrismaModule,
+    DatabaseModule,
     AuthModule,
     CatalogModule,
     CartModule,

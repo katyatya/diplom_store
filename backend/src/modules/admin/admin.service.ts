@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { OrderStatus, Prisma } from "@prisma/client";
-import { PrismaService } from "../../prisma/prisma.service";
+import { DatabaseService } from "../../database/database.service";
 import { CreateProductDto } from "../catalog/dto/create-product.dto";
 import { CreateBannerDto } from "./dto/create-banner.dto";
 import { CreateCollectionDto } from "./dto/create-collection.dto";
@@ -75,7 +75,7 @@ function slugifyCollectionTitle(input: string): string {
 
 @Injectable()
 export class AdminService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: DatabaseService) {}
 
   private readonly orderStatusTransitions: Record<OrderStatus, OrderStatus[]> = {
     NEW: ["CONFIRMED", "CANCELLED_NO_STOCK", "CANCELLED_BY_CLIENT", "CANCELLED_OTHER"],
