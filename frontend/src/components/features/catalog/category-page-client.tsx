@@ -5,10 +5,11 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Product, fetchCategories, fetchProducts } from "@/lib/api";
 import { findCategoryBySlug } from "@/lib/catalog-categories";
-import { getPrimaryProductImage } from "@/lib/product-images";
-import { formatPrice } from "@/lib/format";
 import { getProductHref } from "@/lib/catalog";
 import { useWishlist } from "@/hooks/use-wishlist";
+import { ProductCardImage } from "@/components/features/catalog/product-card-image";
+import { WishlistButton } from "@/components/features/catalog/wishlist-button";
+import { ProductPrice } from "@/components/features/catalog/product-price";
 
 type CategoryPageClientProps = {
   categorySlug: string;
@@ -96,29 +97,19 @@ export function CategoryPageClient({ categorySlug }: CategoryPageClientProps) {
               role="link"
               tabIndex={0}
             >
-              <div className="relative overflow-hidden bg-muted/30">
-                <img
-                  src={getPrimaryProductImage(product)}
-                  alt={product.name}
-                  className="h-[400px] w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                />
-                <button
-                  type="button"
-                  aria-label="Добавить в избранное"
+              <ProductCardImage
+                product={product}
+                imageClassName="h-[400px] transition-transform duration-500 group-hover:scale-[1.03]"
+              >
+                <WishlistButton
+                  active={wishlistProductIds.has(product.id)}
                   className={`absolute right-3 top-3 flex h-8 w-8 items-center justify-center bg-white/80 text-base backdrop-blur-sm transition-all duration-200 group-hover:opacity-100 ${wishlistProductIds.has(product.id) ? "text-red-500 opacity-100" : "text-muted-foreground opacity-0 hover:text-foreground"}`}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    void addProductToWishlist(product.id);
-                  }}
-                >
-                  ♡
-                </button>
-              </div>
+                  onClick={() => void addProductToWishlist(product.id)}
+                />
+              </ProductCardImage>
               <div className="mt-3 grid gap-1">
                 <h2 className="text-xs uppercase tracking-wide">{product.name}</h2>
-                <p className="text-sm font-light text-muted-foreground">
-                  {formatPrice(product.price)}
-                </p>
+                <ProductPrice value={product.price} className="text-sm font-light text-muted-foreground" />
               </div>
             </article>
           );

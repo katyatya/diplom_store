@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { Test } from "@nestjs/testing";
 import { JwtUser } from "../../common/interfaces/jwt-user.interface";
-import { PrismaService } from "../../prisma/prisma.service";
+import { DatabaseService } from "../../database/database.service";
 import { CartController } from "./cart.controller";
 import { CartService } from "./cart.service";
 
@@ -30,15 +30,15 @@ describe("Cart module integration", () => {
       providers: [
         {
           provide: CartService,
-          useFactory: (prisma: PrismaService) => new CartService(prisma),
-          inject: [PrismaService],
+          useFactory: (prisma: DatabaseService) => new CartService(prisma),
+          inject: [DatabaseService],
         },
         {
           provide: CartController,
           useFactory: (cartService: CartService) => new CartController(cartService),
           inject: [CartService],
         },
-        { provide: PrismaService, useValue: prismaMock },
+        { provide: DatabaseService, useValue: prismaMock },
       ],
     }).compile();
 

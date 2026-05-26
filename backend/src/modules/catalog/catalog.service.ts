@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
-import { PrismaService } from "../../prisma/prisma.service";
+import { DatabaseService } from "../../database/database.service";
 import { CreateProductDto } from "./dto/create-product.dto";
 
 function getSizeLabelsByCategory(category: string): string[] {
@@ -19,7 +19,7 @@ function getSizeLabelsByCategory(category: string): string[] {
 
 @Injectable()
 export class CatalogService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: DatabaseService) {}
 
   listProducts(filters?: { category?: string; isNew?: string; collectionSlug?: string }) {
     const category = filters?.category?.trim();

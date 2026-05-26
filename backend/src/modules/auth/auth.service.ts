@@ -7,7 +7,7 @@ import {
 import { JwtService } from "@nestjs/jwt";
 import { UserRole } from "@prisma/client";
 import * as bcrypt from "bcrypt";
-import { PrismaService } from "../../prisma/prisma.service";
+import { DatabaseService } from "../../database/database.service";
 import { JwtUser } from "../../common/interfaces/jwt-user.interface";
 import { LoginDto } from "./dto/login.dto";
 import { RegisterDto } from "./dto/register.dto";
@@ -25,7 +25,7 @@ type AuthResult = {
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly prisma: DatabaseService,
     private readonly jwtService: JwtService,
   ) {}
 

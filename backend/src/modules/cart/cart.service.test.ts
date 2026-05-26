@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { NotFoundException } from "@nestjs/common";
-import { PrismaService } from "../../prisma/prisma.service";
+import { DatabaseService } from "../../database/database.service";
 import { CartService } from "./cart.service";
 
 describe("CartService", () => {
@@ -25,7 +25,7 @@ describe("CartService", () => {
         upsert: async (args: unknown) => args,
       },
     };
-    const service = new CartService(prisma as unknown as PrismaService);
+    const service = new CartService(prisma as unknown as DatabaseService);
 
     const result = await service.addItem("user-1", {
       variantId: "variant-1",
@@ -45,7 +45,7 @@ describe("CartService", () => {
         }),
       },
     };
-    const service = new CartService(prisma as unknown as PrismaService);
+    const service = new CartService(prisma as unknown as DatabaseService);
 
     await assert.rejects(
       () =>

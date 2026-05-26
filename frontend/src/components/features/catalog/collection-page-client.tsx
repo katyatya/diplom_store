@@ -4,10 +4,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { Product, fetchProducts } from "@/lib/api";
-import { getPrimaryProductImage } from "@/lib/product-images";
 import { getProductHref } from "@/lib/catalog";
 import { useWishlist } from "@/hooks/use-wishlist";
-import { formatPrice } from "@/lib/format";
+import { ProductCardImage } from "@/components/features/catalog/product-card-image";
+import { WishlistButton } from "@/components/features/catalog/wishlist-button";
+import { ProductPrice } from "@/components/features/catalog/product-price";
 
 type CollectionPageClientProps = {
   collectionSlug: string;
@@ -78,29 +79,20 @@ export function CollectionPageClient({ collectionSlug }: CollectionPageClientPro
               role="link"
               tabIndex={0}
             >
-              <div className="overflow-hidden bg-muted/30">
-                <img
-                  src={getPrimaryProductImage(product)}
-                  alt={product.name}
-                  className="h-[420px] w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-                />
-              </div>
+              <ProductCardImage
+                product={product}
+                imageClassName="h-[420px] transition-transform duration-300 group-hover:scale-[1.02]"
+              />
               <div className="mt-3 grid gap-1">
                 <div className="flex items-start justify-between gap-3">
                   <h2 className="text-sm uppercase tracking-wide">{product.name}</h2>
-                  <button
-                    type="button"
-                    aria-label="Добавить в избранное"
+                  <WishlistButton
+                    active={wishlistProductIds.has(product.id)}
                     className={`text-lg leading-none ${wishlistProductIds.has(product.id) ? "text-red-500" : "text-muted-foreground hover:text-foreground"}`}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      void addProductToWishlist(product.id);
-                    }}
-                  >
-                    ♡
-                  </button>
+                    onClick={() => void addProductToWishlist(product.id)}
+                  />
                 </div>
-                <p className="text-sm font-medium">{formatPrice(product.price, "word")}</p>
+                <ProductPrice value={product.price} withWord className="text-sm font-medium" />
               </div>
             </article>
           );
