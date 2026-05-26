@@ -1,7 +1,12 @@
 "use client";
 
 import { Order } from "@/lib/api";
-import { ORDER_STATUS_LABELS, getStatusBadgeClass } from "@/lib/orders";
+import {
+  ORDER_STATUS_LABELS,
+  PAYMENT_STATUS_LABELS,
+  getPaymentStatusBadgeClass,
+  getStatusBadgeClass,
+} from "@/lib/orders";
 import { formatPrice, formatSizeLabel } from "@/lib/format";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -35,6 +40,27 @@ export function OrderCard({
       <p className="my-1 text-sm text-muted-foreground">
         {order.deliveryType} / {formatPrice(order.totalAmount, "word")}
       </p>
+      <p className="my-1 text-sm text-muted-foreground">
+        Способ оплаты: {order.paymentMethod}
+      </p>
+      <p className="my-1 text-sm text-muted-foreground">
+        Оплата:{" "}
+        <span
+          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${getPaymentStatusBadgeClass(order.paymentStatus)}`}
+        >
+          {PAYMENT_STATUS_LABELS[order.paymentStatus] ?? order.paymentStatus}
+        </span>
+        {order.paidAt ? (
+          <span className="ml-2 text-xs">
+            ({new Date(order.paidAt).toLocaleString("ru-RU")})
+          </span>
+        ) : null}
+      </p>
+      {order.yookassaPaymentId ? (
+        <p className="my-1 text-xs text-muted-foreground">
+          ID платежа ЮKassa: <span className="font-mono">{order.yookassaPaymentId}</span>
+        </p>
+      ) : null}
       <div className="my-2">
         <p className="mb-1 text-sm font-medium">Товары в заказе:</p>
         <ul className="list-inside list-disc text-sm text-muted-foreground">

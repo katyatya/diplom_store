@@ -4,7 +4,7 @@ import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { createOrder, fetchCart, fetchMe } from "@/lib/api";
+import { createOrder, createYooKassaPayment, fetchCart, fetchMe } from "@/lib/api";
 import { AUTH_STATE_CHANGED_EVENT, requestAuthRequired } from "@/lib/auth-required";
 import { Button } from "@/components/ui/button";
 import {
@@ -205,12 +205,20 @@ function CheckoutPageInner() {
         paymentMethod,
       });
       setErrors({});
-      setSuccessOrderId(order.id);
-      setIsSuccessOpen(true);
       setStatus("");
       setCartItems([]);
+
+      if (paymentMethod === "Онлайн") {
+        setStatus("Перенаправляемся на оплату...");
+        const payment = await createYooKassaPayment(order.id);
+        window.location.href = payment.confirmationUrl;
+        return;
+      }
+
+      setSuccessOrderId(order.id);
+      setIsSuccessOpen(true);
     } catch {
-      setStatus("Не удалось оформить заказ. Убедитесь, что корзина не пустая и вы авторизованы.");
+      setStatus("Не удалось оформить заказ или создать платеж. Попробуйте еще раз.");
     }
   }
 
