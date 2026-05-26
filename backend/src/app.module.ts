@@ -11,6 +11,7 @@ import { OutfitsModule } from "./modules/outfits/outfits.module";
 import { StylistLooksModule } from "./modules/stylist-looks/stylist-looks.module";
 import { WishlistModule } from "./modules/wishlist/wishlist.module";
 import { DatabaseModule } from "./database/database.module";
+import { MailModule } from "./modules/mail/mail.module";
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { DatabaseModule } from "./database/database.module";
       envFilePath: join(__dirname, "..", ".env"),
     }),
     DatabaseModule,
+    MailModule,
     AuthModule,
     CatalogModule,
     CartModule,

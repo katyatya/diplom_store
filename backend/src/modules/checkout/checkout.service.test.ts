@@ -2,7 +2,18 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { BadRequestException } from "@nestjs/common";
 import { DatabaseService } from "../../database/database.service";
+import { OrderNotificationService } from "../mail/order-notification.service";
 import { CheckoutService } from "./checkout.service";
+
+function createCheckoutService(prisma: unknown): CheckoutService {
+  const orderNotifications = {
+    notifyNewOrder: async () => {},
+  };
+  return new CheckoutService(
+    prisma as DatabaseService,
+    orderNotifications as unknown as OrderNotificationService,
+  );
+}
 
 describe("CheckoutService", () => {
   it("creates an order from cart items and clears the cart", async () => {
@@ -38,7 +49,7 @@ describe("CheckoutService", () => {
         },
       },
     };
-    const service = new CheckoutService(prisma as unknown as DatabaseService);
+    const service = createCheckoutService(prisma);
 
     const result = await service.createOrder("user-1", {
       customerName: "Анна",
@@ -62,7 +73,7 @@ describe("CheckoutService", () => {
         findUnique: async () => ({ id: "cart-1", items: [] }),
       },
     };
-    const service = new CheckoutService(prisma as unknown as DatabaseService);
+    const service = createCheckoutService(prisma);
 
     await assert.rejects(
       () =>

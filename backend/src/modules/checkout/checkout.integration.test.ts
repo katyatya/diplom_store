@@ -4,6 +4,7 @@ import { describe, it } from "node:test";
 import { Test } from "@nestjs/testing";
 import { JwtUser } from "../../common/interfaces/jwt-user.interface";
 import { DatabaseService } from "../../database/database.service";
+import { OrderNotificationService } from "../mail/order-notification.service";
 import { CheckoutController } from "./checkout.controller";
 import { CheckoutService } from "./checkout.service";
 
@@ -44,8 +45,13 @@ describe("Checkout module integration", () => {
       providers: [
         {
           provide: CheckoutService,
-          useFactory: (prisma: DatabaseService) => new CheckoutService(prisma),
-          inject: [DatabaseService],
+          useFactory: (prisma: DatabaseService, orderNotifications: OrderNotificationService) =>
+            new CheckoutService(prisma, orderNotifications),
+          inject: [DatabaseService, OrderNotificationService],
+        },
+        {
+          provide: OrderNotificationService,
+          useValue: { notifyNewOrder: async () => {} },
         },
         {
           provide: CheckoutController,
