@@ -99,6 +99,9 @@ export type Order = {
   deliveryType: "PICKUP" | "CDEK";
   deliveryPrice: string;
   paymentMethod: string;
+  paymentStatus: "NOT_REQUIRED" | "PENDING" | "PAID" | "FAILED";
+  yookassaPaymentId?: string | null;
+  paidAt?: string | null;
   status: string;
   cancelReason?: string | null;
   totalAmount: string;
@@ -418,6 +421,30 @@ export function createOrder(payload: {
 }): Promise<Order> {
   return request<Order>(
     "/checkout/order",
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+    true,
+  );
+}
+
+export function createYooKassaPayment(
+  orderId: string,
+): Promise<{ confirmationUrl: string; paymentId: string }> {
+  return request<{ confirmationUrl: string; paymentId: string }>(
+    `/checkout/yookassa/payment/${orderId}`,
+    { method: "POST" },
+    true,
+  );
+}
+
+export function confirmYooKassaMockPayment(payload: {
+  orderId: string;
+  result: "success" | "fail";
+}): Promise<{ success: true }> {
+  return request<{ success: true }>(
+    "/checkout/yookassa/mock/confirm",
     {
       method: "POST",
       body: JSON.stringify(payload),

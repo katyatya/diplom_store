@@ -14,7 +14,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/toast";
-import { ORDER_STATUS_LABELS, getStatusBadgeClass } from "@/lib/orders";
+import { ORDER_STATUS_LABELS, PAYMENT_STATUS_LABELS, getStatusBadgeClass } from "@/lib/orders";
 import { formatPrice, formatSizeLabel } from "@/lib/format";
 
 export default function ProfilePage() {
@@ -118,7 +118,11 @@ export default function ProfilePage() {
             Доставка: {order.deliveryType === "PICKUP" ? "Самовывоз" : "CDEK"} /{" "}
             {formatPrice(order.deliveryPrice, "word")}
             </p>
-            <p className="text-sm text-muted-foreground">Оплата: {order.paymentMethod}</p>
+            <p className="text-sm text-muted-foreground">
+              Оплата: {order.paymentMethod}
+              {" · "}
+              {PAYMENT_STATUS_LABELS[order.paymentStatus] ?? order.paymentStatus}
+            </p>
             <p>
               Сумма: <strong>{formatPrice(order.totalAmount, "word")}</strong>
             </p>

@@ -29,6 +29,13 @@ enum OrderStatus {
   CANCELLED_OTHER
 }
 
+enum PaymentStatus {
+  NOT_REQUIRED
+  PENDING
+  PAID
+  FAILED
+}
+
 model User {
   id           String    @id @default(cuid())
   name         String    @default("Пользователь")
@@ -120,10 +127,13 @@ model Order {
   address        String?
   deliveryType   DeliveryType
   deliveryPrice  Decimal      @db.Decimal(10, 2)
-  paymentMethod  String
-  status         OrderStatus   @default(NEW)
-  cancelReason   String?
-  totalAmount    Decimal      @db.Decimal(10, 2)
+  paymentMethod      String
+  paymentStatus      PaymentStatus @default(PENDING)
+  yookassaPaymentId  String?
+  paidAt             DateTime?
+  status             OrderStatus   @default(NEW)
+  cancelReason       String?
+  totalAmount        Decimal      @db.Decimal(10, 2)
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   items          OrderItem[]

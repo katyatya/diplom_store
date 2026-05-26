@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
-import { Prisma } from "@prisma/client";
+import { PaymentStatus, Prisma } from "@prisma/client";
 import { DatabaseService } from "../../database/database.service";
 import { CreateOrderDto } from "./dto/create-order.dto";
 
@@ -60,6 +60,8 @@ export class CheckoutService {
         deliveryType: dto.deliveryType,
         deliveryPrice: new Prisma.Decimal(deliveryPrice),
         paymentMethod: dto.paymentMethod,
+        paymentStatus:
+          dto.paymentMethod === "Онлайн" ? PaymentStatus.PENDING : PaymentStatus.NOT_REQUIRED,
         totalAmount: new Prisma.Decimal(totalAmount),
         items: {
           create: cart.items.map((item) => ({
