@@ -13,7 +13,6 @@
 - `checkout` — оформление заказа, оплата, доставка
 - `outfits` — пользовательские образы (CRUD + добавление в корзину)
 - `stylist-looks` — готовые образы от стилистов (readonly для пользователя)
-- `wishlist` — избранное
 - `admin` — админ-функции для контента и модерации
 
 ## Frontend роуты
@@ -23,7 +22,6 @@
 - `/catalog/[id]`
 - `/outfit-builder`
 - `/outfits`
-- `/wishlist`
 - `/cart`
 - `/checkout`
 - `/profile`
@@ -84,11 +82,6 @@ Checkout (Bearer token):
 - `POST /checkout/order`
 - `GET /checkout/orders`
 
-Wishlist (Bearer token):
-- `GET /wishlist`
-- `POST /wishlist/items`
-- `DELETE /wishlist/items/:productId`
-
 Admin (Bearer token + ADMIN):
 - `GET/POST /admin/products`
 - `PATCH/DELETE /admin/products/:id`
@@ -100,7 +93,7 @@ Admin (Bearer token + ADMIN):
 
 ## Что добавить следующим шагом
 
-1. Prisma schema и миграции (`Product`, `Cart`, `Order`, `Outfit`, `Wishlist`).
+1. Prisma schema и миграции (`Product`, `Cart`, `Order`, `Outfit`).
 2. JWT auth + refresh tokens и guards для ролей.
 3. Интеграция платежей и доставки (webhook-обработчики в `checkout`).
 4. Админ-панель (например, отдельный route group в Next.js).

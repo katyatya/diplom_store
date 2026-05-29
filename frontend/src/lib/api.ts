@@ -386,31 +386,6 @@ export function deleteOutfit(outfitId: string): Promise<{ success: true }> {
   return request<{ success: true }>(`/outfits/${outfitId}`, { method: "DELETE" }, true);
 }
 
-export function fetchWishlist(): Promise<Array<{ id: string; product: Product }>> {
-  return request<Array<{ id: string; product: Product }>>("/wishlist", undefined, true);
-}
-
-export function addToWishlist(productId: string): Promise<Array<{ id: string; product: Product }>> {
-  return request<Array<{ id: string; product: Product }>>(
-    "/wishlist/items",
-    {
-      method: "POST",
-      body: JSON.stringify({ productId }),
-    },
-    true,
-  );
-}
-
-export function removeFromWishlist(
-  productId: string,
-): Promise<Array<{ id: string; product: Product }>> {
-  return request<Array<{ id: string; product: Product }>>(
-    `/wishlist/items/${productId}`,
-    { method: "DELETE" },
-    true,
-  );
-}
-
 export function createOrder(payload: {
   customerName: string;
   phone: string;

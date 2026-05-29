@@ -5,9 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { Product, fetchProducts } from "@/lib/api";
 import { getProductHref } from "@/lib/catalog";
-import { useWishlist } from "@/hooks/use-wishlist";
 import { ProductCardImage } from "@/components/features/catalog/product-card-image";
-import { WishlistButton } from "@/components/features/catalog/wishlist-button";
 import { ProductPrice } from "@/components/features/catalog/product-price";
 
 type CollectionPageClientProps = {
@@ -26,7 +24,6 @@ export function CollectionPageClient({ collectionSlug }: CollectionPageClientPro
   const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [pageStatus, setPageStatus] = useState("");
-  const { wishlistProductIds, status, addProductToWishlist } = useWishlist();
 
   const collectionTitle = useMemo(
     () => prettifyCollectionTitle(decodeURIComponent(collectionSlug)),
@@ -61,7 +58,6 @@ export function CollectionPageClient({ collectionSlug }: CollectionPageClientPro
         Товары, отобранные специально для этой рекламной коллекции.
       </p>
       {pageStatus ? <p className="text-sm text-emerald-600">{pageStatus}</p> : null}
-      {status ? <p className="text-sm text-emerald-600">{status}</p> : null}
       <div className="mx-auto grid w-full max-w-4xl gap-x-6 gap-y-10 sm:grid-cols-2">
         {products.map((product) => {
           const productHref = getProductHref(product);
@@ -84,14 +80,7 @@ export function CollectionPageClient({ collectionSlug }: CollectionPageClientPro
                 imageClassName="h-[420px] transition-transform duration-300 group-hover:scale-[1.02]"
               />
               <div className="mt-3 grid gap-1">
-                <div className="flex items-start justify-between gap-3">
-                  <h2 className="text-sm uppercase tracking-wide">{product.name}</h2>
-                  <WishlistButton
-                    active={wishlistProductIds.has(product.id)}
-                    className={`text-lg leading-none ${wishlistProductIds.has(product.id) ? "text-red-500" : "text-muted-foreground hover:text-foreground"}`}
-                    onClick={() => void addProductToWishlist(product.id)}
-                  />
-                </div>
+                <h2 className="text-sm uppercase tracking-wide">{product.name}</h2>
                 <ProductPrice value={product.price} withWord className="text-sm font-medium" />
               </div>
             </article>

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Heart, LogOut, ShoppingBag, User } from "lucide-react";
+import { LogOut, ShoppingBag, User } from "lucide-react";
 import { type AuthUser, fetchMe, logout } from "@/lib/api";
 import { AuthDialog } from "@/components/features/auth/auth-dialog";
 import {
@@ -81,15 +81,6 @@ export function Header() {
 
         {/* Right actions */}
         <div className="flex items-center gap-1">
-          {user ? (
-            <Link
-              href="/wishlist"
-              aria-label="Избранное"
-              className="flex h-9 w-9 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
-            >
-              <Heart size={18} strokeWidth={1.5} />
-            </Link>
-          ) : null}
           <Link
             href="/cart"
             aria-label="Корзина"

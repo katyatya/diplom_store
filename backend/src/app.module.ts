@@ -9,7 +9,6 @@ import { CatalogModule } from "./modules/catalog/catalog.module";
 import { CheckoutModule } from "./modules/checkout/checkout.module";
 import { OutfitsModule } from "./modules/outfits/outfits.module";
 import { StylistLooksModule } from "./modules/stylist-looks/stylist-looks.module";
-import { WishlistModule } from "./modules/wishlist/wishlist.module";
 import { DatabaseModule } from "./database/database.module";
 import { MailModule } from "./modules/mail/mail.module";
 
@@ -27,7 +26,6 @@ import { MailModule } from "./modules/mail/mail.module";
     CheckoutModule,
     OutfitsModule,
     StylistLooksModule,
-    WishlistModule,
     AdminModule,
   ],
   controllers: [HealthController],
