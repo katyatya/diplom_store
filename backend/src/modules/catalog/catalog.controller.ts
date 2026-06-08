@@ -95,6 +95,7 @@ export class CatalogController {
 
     res.setHeader("Content-Type", contentType);
     res.setHeader("Cache-Control", cacheControl);
+    res.setHeader("Access-Control-Allow-Origin", "*");
     res.send(body);
   }
 

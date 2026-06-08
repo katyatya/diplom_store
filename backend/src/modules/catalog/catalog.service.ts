@@ -2,27 +2,21 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { DatabaseService } from "../../database/database.service";
 import { CreateProductDto } from "./dto/create-product.dto";
-
-function getSizeLabelsByCategory(category: string): string[] {
-  const normalized = category.trim().toLowerCase();
-  const shoeCategories = ["обувь"];
-  const oneSizeCategories = ["сумки", "аксессуары", "аксессуар"];
-
-  if (shoeCategories.some((entry) => normalized.includes(entry))) {
-    return ["35", "36", "37", "38", "39", "40", "41"];
-  }
-  if (oneSizeCategories.some((entry) => normalized.includes(entry))) {
-    return ["ONE_SIZE"];
-  }
-  return ["XS", "S", "M", "L", "XL"];
-}
+import {
+  DEFAULT_PRODUCT_CATEGORY,
+  PRODUCT_CATEGORIES,
+  assertProductCategory,
+  getSizeLabelsByCategory,
+  resolveProductCategory,
+} from "./product-categories";
 
 @Injectable()
 export class CatalogService {
   constructor(private readonly prisma: DatabaseService) {}
 
   listProducts(filters?: { category?: string; isNew?: string; collectionSlug?: string }) {
-    const category = filters?.category?.trim();
+    const categoryInput = filters?.category?.trim();
+    const category = categoryInput ? resolveProductCategory(categoryInput) ?? categoryInput : undefined;
     const collectionSlug = filters?.collectionSlug?.trim();
     const isNew =
       filters?.isNew === "true"
@@ -66,7 +60,9 @@ export class CatalogService {
   }
 
   createProduct(dto: CreateProductDto) {
-    const category = dto.category ?? "Одежда";
+    const category = dto.category
+      ? assertProductCategory(dto.category)
+      : DEFAULT_PRODUCT_CATEGORY;
     return this.prisma.product.create({
       data: {
         name: dto.name,
@@ -74,6 +70,7 @@ export class CatalogService {
         composition: dto.composition,
         price: new Prisma.Decimal(dto.price),
         imageUrl: dto.imageUrl,
+        outfitImageUrl: dto.outfitImageUrl?.trim() || null,
         category,
         isNew: dto.isNew ?? false,
         variants: {
@@ -89,9 +86,15 @@ export class CatalogService {
       where: { isActive: true },
       select: { category: true },
       distinct: ["category"],
-      orderBy: { category: "asc" },
     });
-    return rows.map((row) => row.category);
+
+    const categoriesWithProducts = new Set(
+      rows
+        .map((row) => resolveProductCategory(row.category))
+        .filter((category): category is (typeof PRODUCT_CATEGORIES)[number] => category !== null),
+    );
+
+    return PRODUCT_CATEGORIES.filter((category) => categoriesWithProducts.has(category));
   }
 
   listNewProducts() {

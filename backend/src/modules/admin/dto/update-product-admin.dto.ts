@@ -24,6 +24,10 @@ export class UpdateProductAdminDto {
 
   @IsOptional()
   @IsString()
+  outfitImageUrl?: string;
+
+  @IsOptional()
+  @IsString()
   category?: string;
 
   @IsOptional()
