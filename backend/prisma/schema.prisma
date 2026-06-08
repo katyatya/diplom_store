@@ -57,8 +57,9 @@ model Product {
   description String?
   composition String?
   price       Decimal     @db.Decimal(10, 2)
-  imageUrl    String
-  category    String      @default("Одежда")
+  imageUrl        String
+  outfitImageUrl  String?
+  category        String      @default("Одежда")
   isNew       Boolean     @default(false)
   isActive    Boolean     @default(true)
   createdAt   DateTime    @default(now())

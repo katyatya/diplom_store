@@ -9,20 +9,11 @@ import { UpdateOrderStatusDto } from "./dto/update-order-status.dto";
 import { UpdateBannerDto } from "./dto/update-banner.dto";
 import { UpdateProductAdminDto } from "./dto/update-product-admin.dto";
 import { UpdateStylistLookDto } from "./dto/update-stylist-look.dto";
-
-function getSizeLabelsByCategory(category: string): string[] {
-  const normalized = category.trim().toLowerCase();
-  const shoeCategories = ["обувь"];
-  const oneSizeCategories = ["сумки", "аксессуары", "аксессуар"];
-
-  if (shoeCategories.some((entry) => normalized.includes(entry))) {
-    return ["35", "36", "37", "38", "39", "40", "41"];
-  }
-  if (oneSizeCategories.some((entry) => normalized.includes(entry))) {
-    return ["ONE_SIZE"];
-  }
-  return ["XS", "S", "M", "L", "XL"];
-}
+import {
+  DEFAULT_PRODUCT_CATEGORY,
+  assertProductCategory,
+  getSizeLabelsByCategory,
+} from "../catalog/product-categories";
 
 function slugifyCollectionTitle(input: string): string {
   const translitMap: Record<string, string> = {
@@ -103,13 +94,16 @@ export class AdminService {
   }
 
   createProduct(dto: CreateProductDto) {
-    const category = dto.category ?? "Одежда";
+    const category = dto.category
+      ? assertProductCategory(dto.category)
+      : DEFAULT_PRODUCT_CATEGORY;
     return this.prisma.product.create({
       data: {
         name: dto.name,
         description: dto.description,
         composition: dto.composition,
         imageUrl: dto.imageUrl,
+        outfitImageUrl: dto.outfitImageUrl?.trim() || null,
         price: new Prisma.Decimal(dto.price),
         category,
         isNew: dto.isNew ?? false,
@@ -125,12 +119,15 @@ export class AdminService {
     const product = await this.prisma.product.findUnique({ where: { id: productId } });
     if (!product) throw new NotFoundException("Product not found");
 
-    if (dto.category && dto.category !== product.category) {
+    const { outfitImageUrl, price, category, ...rest } = dto;
+    const resolvedCategory = category !== undefined ? assertProductCategory(category) : undefined;
+
+    if (resolvedCategory && resolvedCategory !== product.category) {
       await this.prisma.productVariant.updateMany({
         where: { productId },
         data: { isActive: false },
       });
-      const nextSizes = getSizeLabelsByCategory(dto.category);
+      const nextSizes = getSizeLabelsByCategory(resolvedCategory);
       for (const sizeLabel of nextSizes) {
         await this.prisma.productVariant.upsert({
           where: { productId_sizeLabel: { productId, sizeLabel } },
@@ -143,8 +140,12 @@ export class AdminService {
     return this.prisma.product.update({
       where: { id: productId },
       data: {
-        ...dto,
-        ...(dto.price !== undefined ? { price: new Prisma.Decimal(dto.price) } : {}),
+        ...rest,
+        ...(resolvedCategory !== undefined ? { category: resolvedCategory } : {}),
+        ...(price !== undefined ? { price: new Prisma.Decimal(price) } : {}),
+        ...(outfitImageUrl !== undefined
+          ? { outfitImageUrl: outfitImageUrl.trim() || null }
+          : {}),
       },
       include: { variants: { where: { isActive: true }, orderBy: { createdAt: "asc" } } },
     });

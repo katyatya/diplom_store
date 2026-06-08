@@ -27,6 +27,10 @@ export class CreateProductDto {
 
   @IsOptional()
   @IsString()
+  outfitImageUrl?: string;
+
+  @IsOptional()
+  @IsString()
   category?: string;
 
   @IsOptional()

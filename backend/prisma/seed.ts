@@ -48,7 +48,15 @@ async function main(): Promise<void> {
     },
   });
 
-  const productsData = [
+  const productsData: Array<{
+    name: string;
+    description: string;
+    composition: string;
+    price: number;
+    imageUrl: string;
+    outfitImageUrl?: string;
+    category: string;
+  }> = [
     {
       name: "Шерстяная куртка-бомбер с пайетками",
       description: "Классический тренч oversize для межсезонья.",
@@ -56,6 +64,17 @@ async function main(): Promise<void> {
       price: 12990,
       imageUrl:
         "https://cache-limeshop.cdnvideo.ru/limeshop/aa/512f9909cabd51fb90f9332d8523f2f1.jpeg?q=85&w=1000",
+      outfitImageUrl: "/outfits/bomber-jacket.png",
+      category: "Верхняя одежда",
+    },
+    {
+      name: "Блейзер из лиоцела и льна",
+      description: "Классический тренч oversize для межсезонья.",
+      composition: "63% хлопок, 37% полиэстер",
+      price: 9990,
+      imageUrl:
+        "https://cache-limeshop.cdnvideo.ru/limeshop/aa/e4bb09d1c4975b1ba2de30c73caa9721.jpeg?q=85&w=1698",
+      outfitImageUrl: "https://storage.yandexcloud.net/kate234/top_5%20(1).png",
       category: "Верхняя одежда",
     },
     {
@@ -65,7 +84,28 @@ async function main(): Promise<void> {
       price: 7590,
       imageUrl:
         "https://loremflickr.com/1200/1600/dress?lock=201, https://loremflickr.com/1200/1600/fashion?lock=202, https://loremflickr.com/1200/1600/women?lock=203",
+      outfitImageUrl: "/outfits/midi-dress.png",
       category: "Платья",
+    },
+    {
+      name: "Топ из эластичного джерси",
+      description: "Классическая майка",
+      composition: "63% хлопок, 37% полиэстер",
+      price: 1399,
+      imageUrl:
+        "https://cache-limeshop.cdnvideo.ru/limeshop/aa/90d8fd53128b545b8e035d121d6d3403.jpeg?q=85&w=1698",
+      outfitImageUrl: "https://storage.yandexcloud.net/kate234/t_1.png",
+      category: "Топы",
+    },
+    {
+      name: "Топ из эластичного джерси",
+      description: "Классическая майка",
+      composition: "63% хлопок, 37% полиэстер",
+      price: 2399,
+      imageUrl:
+        "https://cache-limeshop.cdnvideo.ru/limeshop/aa/43303a59d8995192af5f0c69c28ed228.jpeg?q=85&w=1698",
+      outfitImageUrl: "https://storage.yandexcloud.net/kate234/t_4%20(1).png",
+      category: "Топы",
     },
     {
       name: "Белые брюки свободного кроя",
@@ -73,7 +113,18 @@ async function main(): Promise<void> {
       composition: "98% хлопок, 2% эластан",
       price: 5490,
       imageUrl:
-        "	https://cache-limeshop.cdnvideo.ru/limeshop/aa/8fd1e9b508e55c2a8b650bc38d6afe12.jpeg?q=85&w=1000",
+        "	https://cache-limeshop.cdnvideo.ru/limeshop/aa/8fd1e9b508e55c2a8b650bc38d6afe12.jpeg?q=85&w=1000,https://cache-limeshop.cdnvideo.ru/limeshop/aa/8f49d7e7927d5d7f9cc5836f92d19460.jpeg?q=85&w=1698,https://cache-limeshop.cdnvideo.ru/limeshop/aa/3536fb10d7c4525981d828ca0ee274df.jpeg?q=85&w=1698",
+      outfitImageUrl: "https://storage.yandexcloud.net/kate234/pants_1.png",
+      category: "Брюки",
+    },
+    {
+      name: "Голубые брюки прямого кроя",
+      description: "Высокая посадка, деним средней плотности.",
+      composition: "98% хлопок, 2% эластан",
+      price: 5599,
+      imageUrl:
+        "https://cache-limeshop.cdnvideo.ru/limeshop/aa/52fe09f384605be6bb8d292319bf7ad0.jpeg?q=85&w=1698,https://cache-limeshop.cdnvideo.ru/limeshop/aa/1aba1545c58d5ba3ad45f484a3628b5a.jpeg?q=85&w=1698",
+      outfitImageUrl: "https://storage.yandexcloud.net/kate234/pants_2.png",
       category: "Брюки",
     },
     {
@@ -83,6 +134,7 @@ async function main(): Promise<void> {
       price: 8990,
       imageUrl:
         "https://cache-limeshop.cdnvideo.ru/limeshop/aa/c08a67f89eb25f84bdc1e1e228ffdf6b.jpeg?q=85&w=558",
+      outfitImageUrl: "https://storage.yandexcloud.net/kate234/shoes_1.png",
       category: "Обувь",
     },
     {
@@ -92,6 +144,7 @@ async function main(): Promise<void> {
       price: 5990,
       imageUrl:
         "https://cache-limeshop.cdnvideo.ru/limeshop/aa/ce143621ba8956daa6d8a741a90eb3cb.jpeg?q=85&w=1044",
+      outfitImageUrl: "https://storage.yandexcloud.net/kate234/shoes_2.png",
       category: "Обувь",
     },
     {
@@ -101,9 +154,20 @@ async function main(): Promise<void> {
       price: 5990,
       imageUrl:
         "	https://cache-limeshop.cdnvideo.ru/limeshop/aa/2a23763c77fe59ee9d66738ef1bc332c.jpeg?q=85&w=1000,	https://cache-limeshop.cdnvideo.ru/limeshop/aa/77c4576df255571c9a637f5476b3a7ea.jpeg?q=85&w=1000,https://cache-limeshop.cdnvideo.ru/limeshop/aa/e771689ff287591894413368b1bb2f00.jpeg?q=85&w=1000",
+      outfitImageUrl: "/outfits/beaded-bag.png",
       category: "Сумки",
     },
-  
+    {
+      name: "Мягкий клатч под кожу",
+      description: "Вместительная модель для города и поездок.",
+      composition: "Вместительная сумка сплетена из легкой и при этом прочной искусственной рафии. Контрастная отделка широкими полосами. Пара плевых ручек из материала под гладкую кожу. Размер: 41 х 11 х 51 см (длина х ширина х высота).",
+      price: 4990,
+      imageUrl:
+        "https://cache-limeshop.cdnvideo.ru/limeshop/aa/a8d95220f0d25393ae1005e8c9b5b9e7.jpeg?q=85&w=1698, https://cache-limeshop.cdnvideo.ru/limeshop/aa/c51b9b3a657f5d89ad5cf5f730f08fae.jpeg?q=85&w=1698",
+        outfitImageUrl: "https://storage.yandexcloud.net/kate234/bag%20(1).png",
+      category: "Сумки",
+    },
+
     {
       name: "Плетеная сумка",
       description: "Вместительная модель для города и поездок.",
@@ -111,6 +175,7 @@ async function main(): Promise<void> {
       price: 6990,
       imageUrl:
         "https://cache-limeshop.cdnvideo.ru/limeshop/aa/af4b838090715b6bb8567ac2a549a088.jpeg?q=85&w=558,	https://cache-limeshop.cdnvideo.ru/limeshop/aa/30f66807ea7d5c1e810e4023aa4c7576.jpeg?q=85&w=558",
+      outfitImageUrl: "/outfits/woven-bag-1.png",
       category: "Сумки",
     },
     {
@@ -120,6 +185,7 @@ async function main(): Promise<void> {
       price: 6990,
       imageUrl:
         "https://cache-limeshop.cdnvideo.ru/limeshop/aa/0d9692dad7dd591db2fb0642986db2c0.jpeg?q=85&w=558,https://cache-limeshop.cdnvideo.ru/limeshop/aa/fe31c606cb6054dea114ffe281d002ef.jpeg?q=85&w=558",
+      outfitImageUrl: "/outfits/woven-bag-2.png",
       category: "Сумки",
     },
     {
@@ -129,6 +195,7 @@ async function main(): Promise<void> {
       price: 6990,
       imageUrl:
         "	https://cache-limeshop.cdnvideo.ru/limeshop/aa/a96c280f88c155c3a63cf7570ba83ac9.jpeg?q=85&w=558,https://cache-limeshop.cdnvideo.ru/limeshop/aa/289266b218395f739e6ecbeb4defb5d1.jpeg?q=85&w=558,	https://cache-limeshop.cdnvideo.ru/limeshop/aa/77007fceedce5065a48fc01661d18b80.jpeg?q=85&w=558",
+      outfitImageUrl: "/outfits/raffia-bag.png",
       category: "Сумки",
     },
   ];
@@ -143,6 +210,7 @@ async function main(): Promise<void> {
         composition: product.composition,
         price: new Prisma.Decimal(product.price),
         imageUrl: product.imageUrl,
+        outfitImageUrl: product.outfitImageUrl ?? null,
         category: product.category,
         variants: {
           create: getSizeLabelsByCategory(product.category).map((sizeLabel) => ({ sizeLabel })),
