@@ -52,7 +52,6 @@ export default function RootLayout({
                   <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Аккаунт</p>
                   <div className="grid gap-2">
                     <a href="/profile" className="text-sm text-muted-foreground transition-colors hover:text-foreground">Профиль</a>
-                    <a href="/wishlist" className="text-sm text-muted-foreground transition-colors hover:text-foreground">Избранное</a>
                     <a href="/cart" className="text-sm text-muted-foreground transition-colors hover:text-foreground">Корзина</a>
                   </div>
                 </div>

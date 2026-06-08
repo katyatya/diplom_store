@@ -17,7 +17,6 @@ function getSizeLabelsByCategory(category: string): string[] {
 async function main(): Promise<void> {
   await prisma.orderItem.deleteMany();
   await prisma.order.deleteMany();
-  await prisma.wishlistItem.deleteMany();
   await prisma.cartItem.deleteMany();
   await prisma.productCollection.deleteMany();
   await prisma.collection.deleteMany();

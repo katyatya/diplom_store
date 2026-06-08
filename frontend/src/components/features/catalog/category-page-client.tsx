@@ -6,9 +6,7 @@ import { useEffect, useState } from "react";
 import { Product, fetchCategories, fetchProducts } from "@/lib/api";
 import { findCategoryBySlug } from "@/lib/catalog-categories";
 import { getProductHref } from "@/lib/catalog";
-import { useWishlist } from "@/hooks/use-wishlist";
 import { ProductCardImage } from "@/components/features/catalog/product-card-image";
-import { WishlistButton } from "@/components/features/catalog/wishlist-button";
 import { ProductPrice } from "@/components/features/catalog/product-price";
 
 type CategoryPageClientProps = {
@@ -20,7 +18,6 @@ export function CategoryPageClient({ categorySlug }: CategoryPageClientProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [resolvedCategory, setResolvedCategory] = useState<string>("");
   const [pageStatus, setPageStatus] = useState("");
-  const { wishlistProductIds, status, setStatus, addProductToWishlist } = useWishlist();
 
   useEffect(() => {
     if (!categorySlug) return;
@@ -78,7 +75,6 @@ export function CategoryPageClient({ categorySlug }: CategoryPageClientProps) {
       ) : null}
 
       {pageStatus ? <p className="text-sm text-muted-foreground">{pageStatus}</p> : null}
-      {status ? <p className="text-sm text-muted-foreground">{status}</p> : null}
 
       <div className="grid gap-x-4 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
         {products.map((product) => {
@@ -100,13 +96,7 @@ export function CategoryPageClient({ categorySlug }: CategoryPageClientProps) {
               <ProductCardImage
                 product={product}
                 imageClassName="h-[400px] transition-transform duration-500 group-hover:scale-[1.03]"
-              >
-                <WishlistButton
-                  active={wishlistProductIds.has(product.id)}
-                  className={`absolute right-3 top-3 flex h-8 w-8 items-center justify-center bg-white/80 text-base backdrop-blur-sm transition-all duration-200 group-hover:opacity-100 ${wishlistProductIds.has(product.id) ? "text-red-500 opacity-100" : "text-muted-foreground opacity-0 hover:text-foreground"}`}
-                  onClick={() => void addProductToWishlist(product.id)}
-                />
-              </ProductCardImage>
+              />
               <div className="mt-3 grid gap-1">
                 <h2 className="text-xs uppercase tracking-wide">{product.name}</h2>
                 <ProductPrice value={product.price} className="text-sm font-light text-muted-foreground" />
