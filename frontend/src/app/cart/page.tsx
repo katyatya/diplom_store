@@ -157,7 +157,7 @@ export default function CartPage() {
           </Link>
         </div>
       ) : (
-        <div className="grid gap-8 lg:grid-cols-[1fr_360px] lg:items-start">
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(300px,380px)] lg:items-start">
           {/* Items list */}
           <div className="grid gap-0">
             {items.map((item) => (
@@ -225,21 +225,28 @@ export default function CartPage() {
           </div>
 
           {/* Order summary */}
-          <div className="border p-6">
+          <div className="min-w-0 border p-6">
             <h2 className="mb-4 text-xs uppercase tracking-[0.2em]">Итого</h2>
             <div className="grid gap-2 border-b pb-4">
               {items.map((item) => (
-                <div key={item.id} className="flex justify-between gap-3 text-sm">
+                <div
+                  key={item.id}
+                  className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-3 text-sm"
+                >
                   <span className="truncate text-muted-foreground">
                     {item.product.name} × {item.quantity}
                   </span>
-                  <span className="shrink-0">{formatPrice(Number(item.product.price) * item.quantity)}</span>
+                  <span className="whitespace-nowrap text-right tabular-nums">
+                    {formatPrice(Number(item.product.price) * item.quantity)}
+                  </span>
                 </div>
               ))}
             </div>
-            <div className="mt-4 flex items-center justify-between">
+            <div className="mt-4 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3">
               <span className="text-sm font-medium uppercase tracking-wide">Сумма</span>
-              <span className="text-lg font-light">{formatPrice(total)}</span>
+              <span className="whitespace-nowrap text-right text-lg font-light tabular-nums">
+                {formatPrice(total)}
+              </span>
             </div>
             <div className="mt-6 grid gap-2">
               {authorized ? (

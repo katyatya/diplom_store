@@ -445,6 +445,7 @@ export function ConstructorEditor({ initialProductId, mode = "user" }: Construct
               selectedNodeId={selectedNodeId}
               onSelect={setSelectedNodeId}
               onChangeItem={updateCanvasItem}
+              onRemoveItem={removeItemFromCanvas}
             />
           </div>
 

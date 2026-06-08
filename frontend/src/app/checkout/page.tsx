@@ -389,17 +389,21 @@ function CheckoutPageInner() {
 
           {cartItems.length > 0 ? (
             <div className="mt-6 grid gap-2 border-t pt-4">
-              <div className="flex justify-between text-sm text-muted-foreground">
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 text-sm text-muted-foreground">
                 <span>Товары</span>
-                <span>{formatPrice(orderItemsTotal)}</span>
+                <span className="whitespace-nowrap text-right tabular-nums">{formatPrice(orderItemsTotal)}</span>
               </div>
-              <div className="flex justify-between text-sm text-muted-foreground">
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 text-sm text-muted-foreground">
                 <span>Доставка</span>
-                <span>{deliveryPrice === 0 ? "Бесплатно" : formatPrice(deliveryPrice)}</span>
+                <span className="whitespace-nowrap text-right tabular-nums">
+                  {deliveryPrice === 0 ? "Бесплатно" : formatPrice(deliveryPrice)}
+                </span>
               </div>
-              <div className="flex items-center justify-between border-t pt-2">
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 border-t pt-2">
                 <span className="text-sm font-medium uppercase tracking-wide">Итого</span>
-                <span className="text-lg font-light">{formatPrice(totalAmount)}</span>
+                <span className="whitespace-nowrap text-right text-lg font-light tabular-nums">
+                  {formatPrice(totalAmount)}
+                </span>
               </div>
             </div>
           ) : null}

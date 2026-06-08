@@ -1,7 +1,7 @@
 "use client";
 
 import { Outfit, Product } from "@/lib/api";
-import { getPrimaryProductImage } from "@/lib/product-images";
+import { getOutfitCanvasImage } from "@/lib/product-images";
 
 type OutfitPreviewProps = {
   items: Outfit["items"];
@@ -64,7 +64,7 @@ export function OutfitPreview({
         return (
           <img
             key={`${item.productId}-${index}`}
-            src={getPrimaryProductImage(product)}
+            src={getOutfitCanvasImage(product)}
             alt={product.name}
             style={{
               position: "absolute",
@@ -74,10 +74,7 @@ export function OutfitPreview({
               height: itemHeight,
               transform: `rotate(${item.rotation ?? 0}deg)`,
               transformOrigin: "center center",
-              objectFit: "cover",
-              borderRadius: 6,
-              border: "1px solid hsl(var(--border))",
-              backgroundColor: "hsl(var(--muted))",
+              objectFit: "contain",
             }}
           />
         );

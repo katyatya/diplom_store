@@ -1,6 +1,7 @@
 const CATEGORY_SLUG_OVERRIDES: Record<string, string> = {
   "верхняя одежда": "outerwear",
   платья: "dresses",
+  топы: "tops",
   брюки: "pants",
   обувь: "shoes",
   сумки: "bags",

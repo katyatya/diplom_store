@@ -4,6 +4,10 @@ import { type DragEvent as ReactDragEvent } from "react";
 import { Product } from "@/lib/api";
 import { getPrimaryProductImage } from "@/lib/product-images";
 import { formatPrice } from "@/lib/format";
+import { cn } from "@/lib/utils";
+
+const SELECTED_CATEGORY_CLASS =
+  "border-[#d6ab9a] bg-[#d6ab9a] text-[#0f4f4b] hover:bg-[#e8cec4]";
 
 type ConstructorProductCatalogProps = {
   categories: string[];
@@ -27,16 +31,25 @@ export function ConstructorProductCatalog({
       <p className="text-xs uppercase tracking-[0.15em]">Каталог товаров</p>
       <div className="grid min-h-0 flex-1 gap-3 md:grid-cols-[130px_minmax(0,1fr)]">
         <aside className="grid content-start gap-1 overflow-auto">
+          <button
+            type="button"
+            onClick={() => onSelectCategory("ALL")}
+            className={cn(
+              "border px-2 py-1.5 text-left text-xs uppercase tracking-wide transition-colors",
+              selectedCategory === "ALL" ? SELECTED_CATEGORY_CLASS : "hover:bg-muted/60",
+            )}
+          >
+            Все
+          </button>
           {categories.map((category) => (
             <button
               key={category}
               type="button"
               onClick={() => onSelectCategory(category)}
-              className={`border px-2 py-1.5 text-left text-xs uppercase tracking-wide transition-colors ${
-                selectedCategory === category
-                  ? "border-foreground bg-foreground text-white"
-                  : "hover:bg-muted/60"
-              }`}
+              className={cn(
+                "border px-2 py-1.5 text-left text-xs uppercase tracking-wide transition-colors",
+                selectedCategory === category ? SELECTED_CATEGORY_CLASS : "hover:bg-muted/60",
+              )}
             >
               {category}
             </button>

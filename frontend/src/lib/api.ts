@@ -16,6 +16,7 @@ export type Product = {
   composition: string | null;
   price: string;
   imageUrl: string;
+  outfitImageUrl?: string | null;
   category: string;
   isNew: boolean;
   isActive: boolean;
@@ -442,6 +443,7 @@ export function adminCreateProduct(payload: {
   composition?: string;
   price: number;
   imageUrl: string;
+  outfitImageUrl?: string;
   category?: string;
   isNew?: boolean;
 }): Promise<Product> {
@@ -467,6 +469,7 @@ export function adminUpdateProduct(
     composition: string;
     price: number;
     imageUrl: string;
+    outfitImageUrl: string | null;
     category: string;
     isNew: boolean;
     isActive: boolean;

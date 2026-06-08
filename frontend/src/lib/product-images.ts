@@ -2,6 +2,7 @@
 
 import { Product } from "@/lib/api";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 const URL_SEPARATOR_REGEX = /[\n,;]+/;
 const FALLBACK_IMAGE_URL = "https://placehold.co/800x1000?text=No+Image";
 
@@ -40,4 +41,30 @@ export function getProductImageUrls(product: Pick<Product, "imageUrl">): string[
 
 export function getPrimaryProductImage(product: Pick<Product, "imageUrl">): string {
   return getProductImageUrls(product)[0] ?? FALLBACK_IMAGE_URL;
+}
+
+export function getOutfitProductImage(
+  product: Pick<Product, "imageUrl" | "outfitImageUrl">,
+): string {
+  const outfitImage = product.outfitImageUrl?.trim();
+  if (outfitImage) {
+    return normalizeImageUrl(outfitImage);
+  }
+  return getPrimaryProductImage(product);
+}
+
+function toCanvasImageUrl(url: string): string {
+  const trimmed = url.trim();
+  if (!trimmed) return trimmed;
+  if (trimmed.startsWith("/")) return trimmed;
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    return `${API_URL}/catalog/image-proxy?url=${encodeURIComponent(trimmed)}`;
+  }
+  return trimmed;
+}
+
+export function getOutfitCanvasImage(
+  product: Pick<Product, "imageUrl" | "outfitImageUrl">,
+): string {
+  return toCanvasImageUrl(getOutfitProductImage(product));
 }

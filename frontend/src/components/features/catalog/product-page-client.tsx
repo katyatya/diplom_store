@@ -10,6 +10,7 @@ import { formatPrice, formatSizeLabel } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/components/ui/toast";
+import { cn } from "@/lib/utils";
 
 type ProductPageClientProps = {
   productSlug: string;
@@ -104,7 +105,14 @@ export function ProductPageClient({ productSlug }: ProductPageClientProps) {
       <Link className="text-sm text-muted-foreground hover:text-foreground" href="/catalog">
         Назад в каталог
       </Link>
-      <div className="mx-auto grid w-full max-w-[1120px] gap-6 lg:grid-cols-[76px_560px_320px] lg:items-start lg:gap-8">
+      <div
+        className={cn(
+          "mx-auto grid w-full max-w-[1120px] gap-6 lg:items-start lg:gap-8",
+          hasMultipleImages
+            ? "lg:grid-cols-[76px_minmax(0,560px)_minmax(0,320px)]"
+            : "lg:grid-cols-[minmax(0,560px)_minmax(0,320px)]",
+        )}
+      >
         {hasMultipleImages ? (
           <div className="order-2 flex gap-2 overflow-auto lg:order-1 lg:max-h-[620px] lg:flex-col">
             {images.map((imageUrl, index) => (
@@ -122,7 +130,7 @@ export function ProductPageClient({ productSlug }: ProductPageClientProps) {
                 <img
                   src={imageUrl}
                   alt={`${product.name} ${index + 1}`}
-                  className="h-[88px] w-[66px] object-cover lg:h-[96px] lg:w-[72px]"
+                  className="h-[88px] w-[66px] bg-muted/20 object-contain lg:h-[96px] lg:w-[72px]"
                 />
               </button>
             ))}
@@ -130,7 +138,10 @@ export function ProductPageClient({ productSlug }: ProductPageClientProps) {
         ) : null}
 
         <Card
-          className="relative order-1 overflow-hidden rounded-none border-0 shadow-none lg:order-2 lg:w-[560px]"
+          className={cn(
+            "relative order-1 min-w-0 overflow-hidden rounded-none border-0 shadow-none",
+            hasMultipleImages ? "lg:order-2" : "lg:order-1",
+          )}
           onTouchStart={(event) => {
             const touch = event.touches[0];
             touchStartX.current = touch.clientX;
@@ -156,7 +167,13 @@ export function ProductPageClient({ productSlug }: ProductPageClientProps) {
             }
           }}
         >
-          <img src={selectedImage} alt={product.name} className="h-auto max-h-[620px] w-full object-cover" />
+          <div className="flex min-h-[420px] items-center justify-center bg-muted/15 lg:min-h-[620px]">
+            <img
+              src={selectedImage}
+              alt={product.name}
+              className="mx-auto max-h-[620px] w-full object-contain"
+            />
+          </div>
           {hasMultipleImages ? (
             <>
               <button
@@ -179,7 +196,7 @@ export function ProductPageClient({ productSlug }: ProductPageClientProps) {
           ) : null}
         </Card>
 
-        <aside className="order-3 grid gap-4 lg:pl-1">
+        <aside className="order-3 min-w-0 grid gap-4 lg:pl-1">
           <div className="grid gap-2">
             <h1 className="text-2xl font-semibold uppercase tracking-wide lg:text-[30px]">{product.name}</h1>
             <p className="text-xl font-semibold">{formatPrice(product.price, "word")}</p>

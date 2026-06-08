@@ -23,7 +23,7 @@ export function ProductCardImage({
       <img
         src={getPrimaryProductImage(product)}
         alt={product.name}
-        className={cn("w-full object-cover", imageClassName)}
+        className={cn("w-full object-contain", imageClassName)}
       />
       {children}
     </div>
