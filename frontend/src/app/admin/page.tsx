@@ -27,8 +27,10 @@ import { useToast } from "@/components/ui/toast";
 import { ConstructorEditor } from "@/components/features/outfits/constructor-editor";
 import { formatPrice } from "@/lib/format";
 import { AdminSection, extractApiErrorMessage, localizeAdminErrorMessage } from "@/lib/admin";
+import { DEFAULT_PRODUCT_CATEGORY, isProductCategory } from "@/lib/product-categories";
 import { AdminSectionsNav } from "@/components/features/admin/admin-sections-nav";
 import { OrderCard } from "@/components/features/admin/order-card";
+import { ProductCategorySelect } from "@/components/features/admin/product-category-select";
 
 export default function AdminPage() {
   const { showToast } = useToast();
@@ -44,8 +46,9 @@ export default function AdminPage() {
   const [name, setName] = useState("");
   const [price, setPrice] = useState("0");
   const [imageUrl, setImageUrl] = useState("");
+  const [outfitImageUrl, setOutfitImageUrl] = useState("");
   const [composition, setComposition] = useState("");
-  const [category, setCategory] = useState("Одежда");
+  const [category, setCategory] = useState<string>(DEFAULT_PRODUCT_CATEGORY);
   const [bannerTitle, setBannerTitle] = useState("");
   const [bannerSubtitle, setBannerSubtitle] = useState("");
   const [bannerImageUrl, setBannerImageUrl] = useState("");
@@ -74,6 +77,7 @@ export default function AdminPage() {
         name: string;
         price: string;
         imageUrl: string;
+        outfitImageUrl: string;
         composition: string;
         category: string;
         isActive: boolean;
@@ -138,8 +142,11 @@ export default function AdminPage() {
               name: product.name,
               price: product.price,
               imageUrl: product.imageUrl,
+              outfitImageUrl: product.outfitImageUrl ?? "",
               composition: product.composition ?? "",
-              category: product.category,
+              category: isProductCategory(product.category)
+                ? product.category
+                : DEFAULT_PRODUCT_CATEGORY,
               isActive: product.isActive,
             };
           }
@@ -361,13 +368,16 @@ export default function AdminPage() {
         name: name.trim(),
         price: Number(price),
         imageUrl: imageUrl.trim(),
+        outfitImageUrl: outfitImageUrl.trim() || undefined,
         composition: composition.trim() || undefined,
         category: category.trim(),
       });
       setName("");
       setPrice("0");
       setImageUrl("");
+      setOutfitImageUrl("");
       setComposition("");
+      setCategory(DEFAULT_PRODUCT_CATEGORY);
       setStatus("Товар успешно добавлен.");
       showToast("Товар успешно добавлен.", "success");
       await load();
@@ -413,6 +423,7 @@ export default function AdminPage() {
         name: draft.name.trim(),
         price: Number(draft.price),
         imageUrl: draft.imageUrl.trim(),
+        outfitImageUrl: draft.outfitImageUrl.trim() || null,
         composition: draft.composition.trim() || undefined,
         category: draft.category.trim(),
         isActive: draft.isActive,
@@ -485,20 +496,20 @@ export default function AdminPage() {
             <Input
               value={imageUrl}
               onChange={(e) => setImageUrl(e.target.value)}
-              placeholder="URL фото (несколько через запятую)"
+              placeholder="URL фото каталога (несколько через запятую)"
               required
+            />
+            <Input
+              value={outfitImageUrl}
+              onChange={(e) => setOutfitImageUrl(e.target.value)}
+              placeholder="URL PNG для конструктора (например /outfits/item.png)"
             />
             <Input
               value={composition}
               onChange={(e) => setComposition(e.target.value)}
               placeholder="Состав (например: 80% хлопок, 20% полиэстер)"
             />
-            <Input
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              placeholder="Категория"
-              required
-            />
+            <ProductCategorySelect value={category} onChange={setCategory} required />
             <Button type="submit" disabled={isCreatingProduct}>
               Добавить
             </Button>
@@ -554,8 +565,28 @@ export default function AdminPage() {
                         },
                       }))
                     }
-                    placeholder="URL фото"
+                    placeholder="URL фото каталога"
                   />
+                  <Input
+                    value={productDrafts[product.id]?.outfitImageUrl ?? ""}
+                    onChange={(event) =>
+                      setProductDrafts((current) => ({
+                        ...current,
+                        [product.id]: {
+                          ...current[product.id],
+                          outfitImageUrl: event.target.value,
+                        },
+                      }))
+                    }
+                    placeholder="URL PNG для конструктора (например /outfits/item.png)"
+                  />
+                  {productDrafts[product.id]?.outfitImageUrl ? (
+                    <img
+                      src={productDrafts[product.id]?.outfitImageUrl}
+                      alt="Превью PNG для конструктора"
+                      className="h-24 w-24 rounded-md border bg-muted/30 object-contain"
+                    />
+                  ) : null}
                   <Input
                     value={productDrafts[product.id]?.composition ?? ""}
                     onChange={(event) =>
@@ -569,18 +600,17 @@ export default function AdminPage() {
                     }
                     placeholder="Состав"
                   />
-                  <Input
-                    value={productDrafts[product.id]?.category ?? ""}
-                    onChange={(event) =>
+                  <ProductCategorySelect
+                    value={productDrafts[product.id]?.category ?? DEFAULT_PRODUCT_CATEGORY}
+                    onChange={(nextCategory) =>
                       setProductDrafts((current) => ({
                         ...current,
                         [product.id]: {
                           ...current[product.id],
-                          category: event.target.value,
+                          category: nextCategory,
                         },
                       }))
                     }
-                    placeholder="Категория"
                   />
                   <label className="flex items-center gap-2 text-sm">
                     <input
@@ -619,6 +649,9 @@ export default function AdminPage() {
                   </p>
                   <p className="my-1 text-sm text-muted-foreground">
                     Состав: {product.composition || "Не указан"}
+                  </p>
+                  <p className="my-1 text-sm text-muted-foreground">
+                    PNG для конструктора: {product.outfitImageUrl || "Не задан (используется фото каталога)"}
                   </p>
                   <div className="flex flex-wrap gap-2">
                     <Button size="sm" variant="secondary" onClick={() => setEditingProductId(product.id)}>
